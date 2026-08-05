@@ -17,7 +17,7 @@ export function Header({ title }: HeaderProps) {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/auth/login')
   }
 
   return (

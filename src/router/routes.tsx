@@ -98,7 +98,7 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: (
-          <RoleGuard allowed={['gym_owner']}>
+          <RoleGuard allowed={['gym_owner', 'admin']}>
             {wrap(SettingsPage)}
           </RoleGuard>
         ),
@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <RoleGuard allowed={['super_admin']}>
+          <RoleGuard allowed={['superadmin']}>
             {wrap(AdminPage)}
           </RoleGuard>
         ),
@@ -116,7 +116,7 @@ export const router = createBrowserRouter([
       {
         path: 'businesses',
         element: (
-          <RoleGuard allowed={['super_admin']}>
+          <RoleGuard allowed={['superadmin']}>
             {wrap(BusinessesPage)}
           </RoleGuard>
         ),
@@ -124,7 +124,7 @@ export const router = createBrowserRouter([
       {
         path: 'businesses/:id/members',
         element: (
-          <RoleGuard allowed={['super_admin']}>
+          <RoleGuard allowed={['superadmin']}>
             {wrap(BusinessMembersPage)}
           </RoleGuard>
         ),

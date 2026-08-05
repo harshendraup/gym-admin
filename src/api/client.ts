@@ -19,49 +19,21 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// ─── Response interceptor: handle 401 + token refresh ───────────────────────
-let isRefreshing = false
-let refreshQueue: Array<(token: string) => void> = []
+// Endpoints where a 401 means "bad credentials", not "session expired" —
+// they must not trigger the auto-logout redirect below.
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register']
 
+// ─── Response interceptor: log out on 401 ────────────────────────────────────
+// The API issues long-lived access tokens with no refresh endpoint, so an
+// expired/revoked token on any other request just means the session is over.
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const original = error.config
+  (error) => {
+    const isAuthEndpoint = AUTH_ENDPOINTS.some((url) => error.config?.url?.includes(url))
 
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          refreshQueue.push((token) => {
-            original.headers.Authorization = `Bearer ${token}`
-            resolve(apiClient(original))
-          })
-        })
-      }
-
-      original._retry = true
-      isRefreshing = true
-
-      try {
-        const refreshToken = useAuthStore.getState().refreshToken
-        if (!refreshToken) throw new Error('No refresh token')
-
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken })
-        const newToken = data.data.accessToken
-
-        useAuthStore.getState().setTokens(newToken, data.data.refreshToken)
-
-        refreshQueue.forEach((cb) => cb(newToken))
-        refreshQueue = []
-
-        original.headers.Authorization = `Bearer ${newToken}`
-        return apiClient(original)
-      } catch {
-        useAuthStore.getState().logout()
-        window.location.href = '/auth/login'
-        return Promise.reject(error)
-      } finally {
-        isRefreshing = false
-      }
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      useAuthStore.getState().logout()
+      window.location.href = '/auth/login'
     }
 
     return Promise.reject(error)

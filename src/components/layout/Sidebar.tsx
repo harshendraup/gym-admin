@@ -10,7 +10,7 @@ import {
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['*'] },
-  { to: '/members', label: 'Members', icon: Users, roles: ['gym_owner', 'staff', 'super_admin'] },
+  { to: '/members', label: 'Members', icon: Users, roles: ['gym_owner', 'staff', 'superadmin'] },
   { to: '/memberships', label: 'Subscription', icon: Layers, roles: ['*'] },
   { to: '/users', label: 'Members', icon: Users, roles: ['admin'] },
   { to: '/trainers', label: 'Trainner', icon: UserCog, roles: ['admin'] },
@@ -21,8 +21,8 @@ const navItems = [
   { to: '/diet', label: 'Diet Plans', icon: Salad, roles: ['*'] },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['gym_owner', 'staff'] },
   { to: '/notifications', label: 'Notifications', icon: Bell, roles: ['*'] },
-  { to: '/settings', label: 'Settings', icon: Settings, roles: ['gym_owner'] },
-  { to: '/businesses', label: 'Businesses', icon: Building2, roles: ['super_admin'] },
+  { to: '/settings', label: 'Settings', icon: Settings, roles: ['gym_owner', 'admin'] },
+  { to: '/businesses', label: 'Businesses', icon: Building2, roles: ['superadmin'] },
 ]
 
 export default function Sidebar() {

@@ -353,7 +353,7 @@ function GymMembersView() {
 
 export default function MembersPage() {
   const gymContext = useAuthStore((s) => s.gymContext)
-  const isSuperAdmin = gymContext?.role === 'super_admin' || !gymContext?.gymId
+  const isSuperAdmin = gymContext?.role === 'superadmin' || !gymContext?.gymId
 
   return isSuperAdmin ? <SuperAdminMembersView /> : <GymMembersView />
 }

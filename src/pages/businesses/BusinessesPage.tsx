@@ -1,56 +1,42 @@
-import { useState, useEffect, useRef, forwardRef } from 'react'
+import { useState, useEffect, useRef, useMemo, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { type ColumnDef } from '@tanstack/react-table'
 import {
-  Building2, Plus, Search, Eye, MoreVertical, Edit2, Trash2,
+  Building2, Plus, Search, MoreVertical, Edit2, Trash2,
   CheckCircle2, XCircle, Clock, Phone, MapPin, Mail,
   AlertTriangle, RefreshCw,
 } from 'lucide-react'
 import DataTable from '@/components/data-table/DataTable'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { useDebounce } from '@/hooks/useDebounce'
-import { businessesApi, type Business, type BusinessStatus, type BusinessPayload } from '@/api/businesses.api'
+import {
+  businessRegistryApi,
+  type BusinessRecord,
+  type BusinessRecordPayload,
+} from '@/api/business-registry.api'
 import { cn } from '@/lib/utils'
+
+type BusinessStatus = 'active' | 'pending' | 'suspended'
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: BusinessStatus }) {
-  const map = {
+function StatusBadge({ status }: { status?: string | null }) {
+  const map: Record<string, { label: string; Icon: typeof CheckCircle2; color: string; bg: string; border: string }> = {
     active: { label: 'Active', Icon: CheckCircle2, color: '#059669', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.35)' },
     pending: { label: 'Pending', Icon: Clock, color: '#D97706', bg: 'rgba(217,119,6,0.15)', border: 'rgba(217,119,6,0.35)' },
     suspended: { label: 'Suspended', Icon: XCircle, color: '#DC2626', bg: 'rgba(220,38,38,0.15)', border: 'rgba(220,38,38,0.35)' },
-  } as const
-  const cfg = map[status]
-  if (!cfg) return null
+  }
+  const cfg = map[status ?? ''] ?? { label: status || 'Unknown', Icon: Clock, color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)' }
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold"
       style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}` }}
     >
       <cfg.Icon className="h-3 w-3" />
-      {cfg.label}
-    </span>
-  )
-}
-
-function TypeBadge({ type }: { type: string }) {
-  const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
-    independent: { label: 'Independent', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.25)' },
-    chain: { label: 'Chain', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)' },
-    franchise: { label: 'Franchise', color: '#06B6D4', bg: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.25)' },
-  }
-  const cfg = map[type] ?? { label: type, color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)' }
-  return (
-    <span
-      className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold capitalize"
-      style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}` }}
-    >
       {cfg.label}
     </span>
   )
@@ -65,7 +51,7 @@ function ActionMenu({
   onStatusChange,
   isPending,
 }: {
-  business: Business
+  business: BusinessRecord
   onEdit: () => void
   onDelete: () => void
   onStatusChange: (s: BusinessStatus) => void
@@ -95,11 +81,13 @@ function ActionMenu({
     }
   }, [open])
 
-  const statusOpts = [
-    { status: 'active' as BusinessStatus, label: 'Mark Active', color: '#059669' },
-    { status: 'pending' as BusinessStatus, label: 'Mark Pending', color: '#D97706' },
-    { status: 'suspended' as BusinessStatus, label: 'Suspend', color: '#DC2626' },
-  ].filter((o) => o.status !== business.status)
+  const statusOpts = (
+    [
+      { status: 'active' as BusinessStatus, label: 'Mark Active', color: '#059669' },
+      { status: 'pending' as BusinessStatus, label: 'Mark Pending', color: '#D97706' },
+      { status: 'suspended' as BusinessStatus, label: 'Suspend', color: '#DC2626' },
+    ] as const
+  ).filter((o) => o.status !== business.status)
 
   return (
     <div ref={ref}>
@@ -182,7 +170,7 @@ function DeleteDialog({
   isPending,
 }: {
   open: boolean
-  business: Business | null
+  business: BusinessRecord | null
   onClose: () => void
   onConfirm: () => void
   isPending: boolean
@@ -211,7 +199,7 @@ function DeleteDialog({
         </DialogHeader>
         <p className="text-sm leading-relaxed" style={{ color: '#64748B' }}>
           Are you sure you want to delete{' '}
-          <span className="font-semibold text-slate-900">{business?.name}</span>?
+          <span className="font-semibold text-slate-900">{business?.businessName}</span>?
           This is a soft delete and can be reviewed later.
         </p>
         <div className="flex justify-end gap-2.5 mt-2">
@@ -250,20 +238,13 @@ function generateBusinessKey(): string {
 // ─── Form ─────────────────────────────────────────────────────────────────────
 
 const businessSchema = z.object({
-  name: z.string().min(2, 'Business name is required'),
-  legalName: z.string().optional(),
-  registrationNumber: z.string().optional(),
-  type: z.enum(['independent', 'chain', 'franchise'], { required_error: 'Type is required' }),
-  email: z.string().email('Valid email required'),
-  phone: z.string().min(7, 'Phone is required'),
-  website: z.string().url('Enter a valid URL').optional().or(z.literal('')),
-  addressLine1: z.string().min(1, 'Address is required'),
-  addressLine2: z.string().optional(),
-  city: z.string().min(1, 'City is required'),
-  state: z.string().min(1, 'State is required'),
-  pincode: z.string().min(4, 'Pincode is required'),
-  country: z.string().min(1, 'Country is required'),
-  logoUrl: z.string().optional().or(z.literal('')),
+  businessName: z.string().min(2, 'Business name is required'),
+  email: z.string().email('Valid email required').optional().or(z.literal('')),
+  mobileNumber: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  gstNo: z.string().optional(),
+  address: z.string().optional(),
+  businessLogo: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 type BusinessFormValues = z.infer<typeof businessSchema>
 
@@ -303,25 +284,31 @@ const GlassInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLIn
 )
 GlassInput.displayName = 'GlassInput'
 
-function GlassSelect({ value, children, onChange, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      value={value}
-      onChange={onChange}
-      className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all duration-200 cursor-pointer"
-      style={{
-        background: 'rgba(255,255,255,0.6)',
-        border: '1px solid rgba(59,130,246,0.15)',
-        color: value ? '#1e293b' : '#64748B',
+const GlassTextarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, onFocus, onBlur, ...props }, ref) => (
+    <textarea
+      ref={ref}
+      rows={2}
+      className={cn(
+        'w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all duration-200 placeholder:text-slate-400 resize-none',
+        className,
+      )}
+      style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(59,130,246,0.15)', color: '#1e293b' }}
+      onFocus={(e) => {
+        e.target.style.border = '1px solid rgba(59,130,246,0.5)'
+        e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)'
+        onFocus?.(e)
       }}
-      onFocus={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.5)' }}
-      onBlur={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.15)' }}
+      onBlur={(e) => {
+        e.target.style.border = '1px solid rgba(59,130,246,0.15)'
+        e.target.style.boxShadow = 'none'
+        onBlur?.(e)
+      }}
       {...props}
-    >
-      {children}
-    </select>
+    />
   )
-}
+)
+GlassTextarea.displayName = 'GlassTextarea'
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null
@@ -349,139 +336,77 @@ export function BusinessFormDialog({
 }: {
   open: boolean
   onClose: () => void
-  editBusiness: Business | null
+  editBusiness: BusinessRecord | null
 }) {
   const qc = useQueryClient()
   const isEdit = !!editBusiness
 
   const [businessKey, setBusinessKey] = useState('')
   const [showKeyWarning, setShowKeyWarning] = useState(false)
-  const [logoPreview, setLogoPreview] = useState('')
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const logoInputRef = useRef<HTMLInputElement>(null)
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<BusinessFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<BusinessFormValues>({
     resolver: zodResolver(businessSchema),
-    defaultValues: { country: 'India', type: 'independent' },
   })
 
   useEffect(() => {
     if (open && editBusiness) {
-      setBusinessKey(editBusiness.businessKey ?? '')
+      setBusinessKey(editBusiness.businessKey)
       reset({
-        name: editBusiness.name,
-        legalName: editBusiness.legalName ?? '',
-        registrationNumber: editBusiness.registrationNumber ?? '',
-        type: editBusiness.type,
-        email: editBusiness.email,
-        phone: editBusiness.phone,
-        website: editBusiness.website ?? '',
-        addressLine1: editBusiness.addressLine1,
-        addressLine2: editBusiness.addressLine2 ?? '',
-        city: editBusiness.city,
-        state: editBusiness.state,
-        pincode: editBusiness.pincode,
-        country: editBusiness.country,
-        logoUrl: editBusiness.logoUrl ?? '',
+        businessName: editBusiness.businessName,
+        email: editBusiness.email ?? '',
+        mobileNumber: editBusiness.mobileNumber ?? '',
+        phoneNumber: editBusiness.phoneNumber ?? '',
+        gstNo: editBusiness.gstNo ?? '',
+        address: editBusiness.address ?? '',
+        businessLogo: editBusiness.businessLogo ?? '',
       })
-      setLogoPreview(editBusiness.logoUrl ?? '')
-      setLogoFile(null)
     } else if (open && !editBusiness) {
       setBusinessKey(generateBusinessKey())
-      reset({ country: 'India', type: 'independent', logoUrl: '' })
-      setLogoPreview('')
-      setLogoFile(null)
-    } else if (!open) {
-      reset({ country: 'India', type: 'independent', logoUrl: '' })
-      setLogoPreview('')
-      setLogoFile(null)
+      reset({ businessName: '', email: '', mobileNumber: '', phoneNumber: '', gstNo: '', address: '', businessLogo: '' })
     }
   }, [open, editBusiness, reset])
 
-  const onLogoSelect: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Please select an image file', variant: 'destructive' })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = String(reader.result ?? '')
-      setLogoPreview(result)
-      setLogoFile(file)
-      setValue('logoUrl', '', { shouldDirty: true, shouldValidate: true })
-    }
-    reader.onerror = () => {
-      toast({ title: 'Failed to read selected image', variant: 'destructive' })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const clearLogo = () => {
-    setLogoPreview('')
-    setLogoFile(null)
-    setValue('logoUrl', '', { shouldDirty: true, shouldValidate: true })
-    if (logoInputRef.current) logoInputRef.current.value = ''
-  }
-
   const createMutation = useMutation({
-    mutationFn: (d: globalThis.FormData) => businessesApi.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'businesses'] }); toast({ title: 'Business created' }); onClose() },
-    onError: () => toast({ title: 'Failed to create business', variant: 'destructive' }),
+    mutationFn: (d: BusinessRecordPayload) => businessRegistryApi.create(d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['businesses'] }); toast({ title: 'Business created' }); onClose() },
+    onError: (err: any) => toast({
+      title: 'Failed to create business',
+      description: err?.response?.data?.errors?.[0]?.message ?? err?.response?.data?.message,
+      variant: 'destructive',
+    }),
   })
 
   const updateMutation = useMutation({
-    mutationFn: (d: globalThis.FormData) => businessesApi.update(editBusiness!.id, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'businesses'] }); toast({ title: 'Business updated' }); onClose() },
-    onError: () => toast({ title: 'Failed to update business', variant: 'destructive' }),
+    mutationFn: (d: Partial<BusinessRecordPayload>) => businessRegistryApi.update(editBusiness!.id, d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['businesses'] }); toast({ title: 'Business updated' }); onClose() },
+    onError: (err: any) => toast({
+      title: 'Failed to update business',
+      description: err?.response?.data?.errors?.[0]?.message ?? err?.response?.data?.message,
+      variant: 'destructive',
+    }),
   })
 
   const isPending = createMutation.isPending || updateMutation.isPending
-  const typeValue = watch('type')
 
   const onSubmit = (data: BusinessFormValues) => {
-    const payload: BusinessPayload = {
-      name: data.name,
-      businessKey: businessKey,
-      type: data.type,
-      email: data.email,
-      phone: data.phone,
-      addressLine1: data.addressLine1,
-      city: data.city,
-      state: data.state,
-      pincode: data.pincode,
-      country: data.country,
-      ...(data.legalName && { legalName: data.legalName }),
-      ...(data.registrationNumber && { registrationNumber: data.registrationNumber }),
-      ...(data.website && { website: data.website }),
-      ...(data.addressLine2 && { addressLine2: data.addressLine2 }),
-      ...(data.logoUrl && { logoUrl: data.logoUrl }),
+    const payload: BusinessRecordPayload = {
+      businessKey,
+      businessName: data.businessName,
+      ...(data.email && { email: data.email }),
+      ...(data.mobileNumber && { mobileNumber: data.mobileNumber }),
+      ...(data.phoneNumber && { phoneNumber: data.phoneNumber }),
+      ...(data.gstNo && { gstNo: data.gstNo }),
+      ...(data.address && { address: data.address }),
+      ...(data.businessLogo && { businessLogo: data.businessLogo }),
     }
 
-    const multipart = new FormData()
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        multipart.append(key, String(value))
-      }
-    })
-
-    if (logoFile) {
-      // Send common file field names to match backend multer config variants.
-      multipart.append('logo', logoFile)
-      multipart.append('logoFile', logoFile)
-      multipart.append('image', logoFile)
-    }
-
-    isEdit ? updateMutation.mutate(multipart) : createMutation.mutate(multipart)
+    isEdit ? updateMutation.mutate(payload) : createMutation.mutate(payload)
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0"
+        className="sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0"
         style={{
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(28px)',
@@ -505,7 +430,7 @@ export function BusinessFormDialog({
               {isEdit ? 'Edit Business' : 'New Business'}
             </DialogTitle>
             <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>
-              {isEdit ? `Editing ${editBusiness?.name}` : 'Register a new business on the platform'}
+              {isEdit ? `Editing ${editBusiness?.businessName}` : 'Register a new business on the platform'}
             </p>
           </div>
         </div>
@@ -517,8 +442,8 @@ export function BusinessFormDialog({
             {/* ── Identity ── */}
             <div className="space-y-4">
               <SectionLabel label="Identity" />
-              <FormField label="Business Name" required error={errors.name?.message}>
-                <GlassInput placeholder="e.g. FitLife Studios" {...register('name')} />
+              <FormField label="Business Name" required error={errors.businessName?.message}>
+                <GlassInput placeholder="e.g. FitLife Studios" {...register('businessName')} />
               </FormField>
               <FormField label="Business Key">
                 <div className="relative">
@@ -530,52 +455,23 @@ export function BusinessFormDialog({
                       background: 'rgba(59,130,246,0.08)',
                       border: '1px solid rgba(59,130,246,0.2)',
                       color: '#1e293b',
-                      paddingRight: isEdit && businessKey ? '110px' : '48px',
+                      paddingRight: '110px',
                     }}
                   />
-                  {isEdit && businessKey ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowKeyWarning(true)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                      style={{
-                        background: 'rgba(220,38,38,0.08)',
-                        border: '1px solid rgba(220,38,38,0.25)',
-                        color: '#DC2626',
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(220,38,38,0.15)' }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(220,38,38,0.08)' }}
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      Regenerate
-                    </button>
-                  ) : (
-                    <span
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest"
-                      style={{ color: '#94a3b8' }}
-                    >
-                      Auto
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => (isEdit ? setShowKeyWarning(true) : setBusinessKey(generateBusinessKey()))}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
+                    style={{
+                      background: isEdit ? 'rgba(220,38,38,0.08)' : 'rgba(59,130,246,0.08)',
+                      border: `1px solid ${isEdit ? 'rgba(220,38,38,0.25)' : 'rgba(59,130,246,0.25)'}`,
+                      color: isEdit ? '#DC2626' : '#2563EB',
+                    }}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerate
+                  </button>
                 </div>
-              </FormField>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Legal Name" error={errors.legalName?.message}>
-                  <GlassInput placeholder="Official registered name" {...register('legalName')} />
-                </FormField>
-                <FormField label="Registration No." error={errors.registrationNumber?.message}>
-                  <GlassInput placeholder="GST / CIN / Company No." {...register('registrationNumber')} />
-                </FormField>
-              </div>
-              <FormField label="Business Type" required error={errors.type?.message}>
-                <GlassSelect
-                  value={typeValue}
-                  onChange={(e) => setValue('type', e.target.value as BusinessFormValues['type'], { shouldValidate: true })}
-                >
-                  <option value="independent" style={{ background: '#0a1223' }}>Independent</option>
-                  <option value="chain" style={{ background: '#0a1223' }}>Chain</option>
-                  <option value="franchise" style={{ background: '#0a1223' }}>Franchise</option>
-                </GlassSelect>
               </FormField>
             </div>
 
@@ -583,91 +479,29 @@ export function BusinessFormDialog({
             <div className="space-y-4">
               <SectionLabel label="Contact" />
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Email" required error={errors.email?.message}>
+                <FormField label="Email" error={errors.email?.message}>
                   <GlassInput type="email" placeholder="admin@business.com" {...register('email')} />
                 </FormField>
-                <FormField label="Phone" required error={errors.phone?.message}>
-                  <GlassInput placeholder="+91 98765 43210" {...register('phone')} />
+                <FormField label="Mobile Number" error={errors.mobileNumber?.message}>
+                  <GlassInput placeholder="+91 98765 43210" {...register('mobileNumber')} />
                 </FormField>
               </div>
-              <FormField label="Website" error={errors.website?.message}>
-                <GlassInput type="url" placeholder="https://www.business.com" {...register('website')} />
+              <FormField label="Phone Number" error={errors.phoneNumber?.message}>
+                <GlassInput placeholder="Landline / office number" {...register('phoneNumber')} />
+              </FormField>
+              <FormField label="GST No." error={errors.gstNo?.message}>
+                <GlassInput placeholder="27ABCDE1234F1Z5" {...register('gstNo')} />
               </FormField>
             </div>
 
-            {/* ── Address ── */}
+            {/* ── Address & Branding ── */}
             <div className="space-y-4">
-              <SectionLabel label="Address" />
-              <FormField label="Address Line 1" required error={errors.addressLine1?.message}>
-                <GlassInput placeholder="Street, building, area" {...register('addressLine1')} />
+              <SectionLabel label="Address & Branding" />
+              <FormField label="Address" error={errors.address?.message}>
+                <GlassTextarea placeholder="Street, city, state, pincode" {...register('address')} />
               </FormField>
-              <FormField label="Address Line 2" error={errors.addressLine2?.message}>
-                <GlassInput placeholder="Apartment, suite, floor (optional)" {...register('addressLine2')} />
-              </FormField>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="City" required error={errors.city?.message}>
-                  <GlassInput placeholder="Mumbai" {...register('city')} />
-                </FormField>
-                <FormField label="State" required error={errors.state?.message}>
-                  <GlassInput placeholder="Maharashtra" {...register('state')} />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Pincode" required error={errors.pincode?.message}>
-                  <GlassInput placeholder="400001" {...register('pincode')} />
-                </FormField>
-                <FormField label="Country" required error={errors.country?.message}>
-                  <GlassInput placeholder="India" {...register('country')} />
-                </FormField>
-              </div>
-            </div>
-
-            {/* ── Branding ── */}
-            <div className="space-y-4">
-              <SectionLabel label="Branding" />
-              <FormField label="Business Logo" error={errors.logoUrl?.message}>
-                <input type="hidden" {...register('logoUrl')} />
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      className="rounded-xl px-4 py-2 text-sm font-medium transition-all duration-150"
-                      style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', color: '#2563EB' }}
-                    >
-                      Select Image
-                    </button>
-                    {logoPreview && (
-                      <button
-                        type="button"
-                        onClick={clearLogo}
-                        className="rounded-xl px-4 py-2 text-sm font-medium transition-all duration-150"
-                        style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#DC2626' }}
-                      >
-                        Remove
-                      </button>
-                    )}
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={onLogoSelect}
-                    />
-                  </div>
-                  {logoPreview ? (
-                    <div
-                      className="inline-flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl"
-                      style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(59,130,246,0.15)' }}
-                    >
-                      <img src={logoPreview} alt="Logo preview" className="h-full w-full object-contain" />
-                    </div>
-                  ) : (
-                    <p className="text-xs" style={{ color: '#94a3b8' }}>
-                      No image selected.
-                    </p>
-                  )}
-                </div>
+              <FormField label="Business Logo URL" error={errors.businessLogo?.message}>
+                <GlassInput type="url" placeholder="https://example.com/logo.png" {...register('businessLogo')} />
               </FormField>
             </div>
 
@@ -757,12 +591,11 @@ export function BusinessFormDialog({
 // ─── Table Columns ────────────────────────────────────────────────────────────
 
 function getColumns(
-  onView: (b: Business) => void,
-  onEdit: (b: Business) => void,
-  onDelete: (b: Business) => void,
-  onStatusChange: (b: Business, s: BusinessStatus) => void,
-  pendingId: string | null,
-): ColumnDef<Business>[] {
+  onEdit: (b: BusinessRecord) => void,
+  onDelete: (b: BusinessRecord) => void,
+  onStatusChange: (b: BusinessRecord, s: BusinessStatus) => void,
+  pendingId: number | null,
+): ColumnDef<BusinessRecord>[] {
   return [
     {
       id: 'business',
@@ -771,8 +604,8 @@ function getColumns(
         const b = row.original
         return (
           <div className="flex items-center gap-3">
-            {b.logoUrl
-              ? <img src={b.logoUrl} alt={b.name} className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
+            {b.businessLogo
+              ? <img src={b.businessLogo} alt={b.businessName} className="h-9 w-9 rounded-xl object-cover flex-shrink-0" />
               : (
                 <div
                   className="flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0"
@@ -783,16 +616,12 @@ function getColumns(
               )
             }
             <div>
-              <p className="text-sm font-semibold text-slate-900 leading-tight">{b.name}</p>
-              <p className="text-xs font-mono mt-0.5" style={{ color: '#94a3b8' }}>/{b.slug}</p>
+              <p className="text-sm font-semibold text-slate-900 leading-tight">{b.businessName}</p>
+              <p className="text-xs font-mono mt-0.5" style={{ color: '#94a3b8' }}>{b.businessKey}</p>
             </div>
           </div>
         )
       },
-    },
-    {
-      header: 'Type',
-      cell: ({ row }) => <TypeBadge type={row.original.type} />,
     },
     {
       header: 'Contact',
@@ -800,29 +629,38 @@ function getColumns(
         const b = row.original
         return (
           <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-1.5" style={{ color: '#64748B' }}>
-              <Mail className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate max-w-[160px]">{b.email}</span>
-            </div>
-            <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
-              <Phone className="h-3 w-3 flex-shrink-0" />
-              {b.phone}
-            </div>
+            {b.email && (
+              <div className="flex items-center gap-1.5" style={{ color: '#64748B' }}>
+                <Mail className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate max-w-[160px]">{b.email}</span>
+              </div>
+            )}
+            {(b.mobileNumber || b.phoneNumber) && (
+              <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
+                <Phone className="h-3 w-3 flex-shrink-0" />
+                {b.mobileNumber || b.phoneNumber}
+              </div>
+            )}
           </div>
         )
       },
     },
     {
-      header: 'Location',
+      header: 'Address',
       cell: ({ row }) => {
-        const b = row.original
+        const address = row.original.address
+        if (!address) return <span style={{ color: '#cbd5e1' }}>—</span>
         return (
-          <div className="flex items-center gap-1.5 text-sm" style={{ color: '#64748B' }}>
+          <div className="flex items-center gap-1.5 text-sm max-w-[220px]" style={{ color: '#64748B' }}>
             <MapPin className="h-3 w-3 flex-shrink-0" />
-            <span>{b.city}, {b.state}</span>
+            <span className="truncate">{address}</span>
           </div>
         )
       },
+    },
+    {
+      header: 'GST No.',
+      cell: ({ row }) => row.original.gstNo || <span style={{ color: '#cbd5e1' }}>—</span>,
     },
     {
       header: 'Status',
@@ -835,20 +673,6 @@ function getColumns(
         const b = row.original
         return (
           <div className="flex items-center justify-end gap-2">
-            <button
-              onClick={() => onView(b)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150"
-              style={{
-                background: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                color: '#2563EB',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.15)' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)' }}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              View
-            </button>
             <ActionMenu
               business={b}
               onEdit={() => onEdit(b)}
@@ -867,44 +691,47 @@ function getColumns(
 
 export default function BusinessesPage() {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [page, setPage] = useState(1)
-  const debouncedSearch = useDebounce(search, 400)
 
   const [formOpen, setFormOpen] = useState(false)
-  const [editBusiness, setEditBusiness] = useState<Business | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
-  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [editBusiness, setEditBusiness] = useState<BusinessRecord | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<BusinessRecord | null>(null)
+  const [pendingId, setPendingId] = useState<number | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'businesses', { search: debouncedSearch, status: statusFilter, type: typeFilter, page }],
-    queryFn: () =>
-      businessesApi.list({
-        search: debouncedSearch || undefined,
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
-        page,
-        perPage: 20,
-        include_deleted: true,
-      }),
+  const { data: businesses, isLoading } = useQuery({
+    queryKey: ['businesses'],
+    queryFn: () => businessRegistryApi.list(),
   })
 
+  const filtered = useMemo(() => {
+    let list = businesses ?? []
+    if (statusFilter) list = list.filter((b) => b.status === statusFilter)
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter(
+        (b) =>
+          b.businessName.toLowerCase().includes(q) ||
+          b.businessKey.toLowerCase().includes(q) ||
+          (b.email ?? '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [businesses, search, statusFilter])
+
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: BusinessStatus }) =>
-      businessesApi.updateStatus(id, status),
+    mutationFn: ({ id, status }: { id: number; status: BusinessStatus }) =>
+      businessRegistryApi.update(id, { status }),
     onMutate: ({ id }) => setPendingId(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'businesses'] }); toast({ title: 'Status updated' }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['businesses'] }); toast({ title: 'Status updated' }) },
     onError: () => toast({ title: 'Failed to update status', variant: 'destructive' }),
     onSettled: () => setPendingId(null),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => businessesApi.delete(id),
+    mutationFn: (id: number) => businessRegistryApi.delete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'businesses'] })
+      qc.invalidateQueries({ queryKey: ['businesses'] })
       toast({ title: 'Business deleted' })
       setDeleteTarget(null)
     },
@@ -912,7 +739,6 @@ export default function BusinessesPage() {
   })
 
   const columns = getColumns(
-    (b) => navigate(`/businesses/${b.id}/members`),
     (b) => { setEditBusiness(b); setFormOpen(true) },
     (b) => setDeleteTarget(b),
     (b, s) => statusMutation.mutate({ id: b.id, status: s }),
@@ -927,7 +753,7 @@ export default function BusinessesPage() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Businesses</h1>
           <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
-            {data?.meta?.total ?? 0} total businesses registered on the platform
+            {businesses?.length ?? 0} total businesses registered on the platform
           </p>
         </div>
         <button
@@ -953,9 +779,9 @@ export default function BusinessesPage() {
             style={{ color: '#94a3b8' }}
           />
           <input
-            placeholder="Search by name, email..."
+            placeholder="Search by name, key, email..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none transition-all duration-200 placeholder:text-slate-400"
             style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(59,130,246,0.15)', color: '#1e293b' }}
             onFocus={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)' }}
@@ -965,7 +791,7 @@ export default function BusinessesPage() {
 
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+          onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-xl px-3 py-2.5 text-sm outline-none cursor-pointer"
           style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(59,130,246,0.15)', color: statusFilter ? '#1e293b' : '#64748B' }}
           onFocus={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.5)' }}
@@ -976,32 +802,13 @@ export default function BusinessesPage() {
           <option value="active" style={{ background: '#ffffff' }}>Active</option>
           <option value="suspended" style={{ background: '#ffffff' }}>Suspended</option>
         </select>
-
-        <select
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
-          className="rounded-xl px-3 py-2.5 text-sm outline-none cursor-pointer"
-          style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(59,130,246,0.15)', color: typeFilter ? '#1e293b' : '#64748B' }}
-          onFocus={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.5)' }}
-          onBlur={(e) => { e.target.style.border = '1px solid rgba(59,130,246,0.15)' }}
-        >
-          <option value="" style={{ background: '#ffffff' }}>All Types</option>
-          <option value="independent" style={{ background: '#ffffff' }}>Independent</option>
-          <option value="chain" style={{ background: '#ffffff' }}>Chain</option>
-          <option value="franchise" style={{ background: '#ffffff' }}>Franchise</option>
-        </select>
       </div>
 
       {/* ── Table ── */}
       <DataTable
         columns={columns}
-        data={data?.data ?? []}
+        data={filtered}
         isLoading={isLoading}
-        pagination={{
-          page,
-          pageCount: data?.meta?.lastPage ?? 1,
-          onPageChange: setPage,
-        }}
         emptyMessage="No businesses found. Add the first one."
       />
 

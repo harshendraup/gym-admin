@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { authApi } from '@/api/auth.api'
-import { useAuthStore } from '@/store/auth.store'
+import { useAuthStore, buildGymContext } from '@/store/auth.store'
 import { toast } from '@/hooks/use-toast'
 
 const schema = z.object({
@@ -30,7 +30,7 @@ export default function OtpPage() {
     setIsLoading(true)
     try {
       const result = await authApi.verifyOtp({ phone, otp })
-      setAuth(result.user, result.accessToken, result.refreshToken, result.gymContext)
+      setAuth(result.user, result.token.token, null, buildGymContext(result.user, result.role))
       navigate('/dashboard')
     } catch {
       toast({ title: 'Invalid OTP', variant: 'destructive' })

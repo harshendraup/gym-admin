@@ -3,8 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { post } from '@/api/client'
-import { useAuthStore } from '@/store/auth.store'
+import { authApi } from '@/api/auth.api'
+import { useAuthStore, buildGymContext } from '@/store/auth.store'
 import { toast } from 'sonner'
 import { Eye, EyeOff, Dumbbell, Loader2 } from 'lucide-react'
 import { heroImages } from '@/data/heroImages'
@@ -50,18 +50,13 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const result = await post<{
-        user: any
-        accessToken: string
-        refreshToken: string
-        expiresIn: number
-        gymContext: { gymId: string; role: string } | null
-      }>('/auth/login', values)
+      const result = await authApi.login(values)
+      const gymContext = buildGymContext(result.user, result.role)
 
-      setAuth(result.user, result.accessToken, result.refreshToken, result.gymContext)
+      setAuth(result.user, result.token.token, null, gymContext)
       navigate(from, { replace: true })
     } catch (error: any) {
-      const msg = error.response?.data?.error?.message ?? 'Login failed. Check your credentials.'
+      const msg = error.response?.data?.message ?? 'Login failed. Check your credentials.'
       toast.error(msg)
     }
   }

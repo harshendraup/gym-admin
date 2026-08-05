@@ -70,12 +70,9 @@ export default function DashboardPage() {
     queryFn: () => authApi.me(),
     staleTime: 5 * 60_000,
   })
-  const effectiveRole = (
-    role ??
-    ((me as unknown as { role?: string } | null)?.role ?? '')
-  ).toLowerCase()
-  const businessId = contextBusinessId ?? resolveBusinessId((me as unknown as WithBusinessId | null) ?? null)
-  const canAddBusinessMember = !!businessId && ['admin', 'super_admin', 'sub_admin', 'gym_owner'].includes(effectiveRole)
+  const effectiveRole = (role ?? me?.role?.role ?? '').toLowerCase()
+  const businessId = contextBusinessId ?? resolveBusinessId((me?.user as unknown as WithBusinessId | null) ?? null)
+  const canAddBusinessMember = !!businessId && ['admin', 'superadmin'].includes(effectiveRole)
   const { data: businessOverview, isLoading: isBusinessOverviewLoading } = useQuery({
     queryKey: ['admin', 'businesses', businessId, 'overview'],
     queryFn: () => businessesApi.overview(businessId!),

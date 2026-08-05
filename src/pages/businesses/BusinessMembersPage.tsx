@@ -357,7 +357,7 @@ export default function BusinessMembersPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const isSuperAdmin = useAuthStore((s) => s.gymContext?.role === 'super_admin')
+  const isSuperAdmin = useAuthStore((s) => s.gymContext?.role === 'superadmin')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -903,7 +903,7 @@ export default function BusinessMembersPage() {
       <BusinessFormDialog
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        editBusiness={business ?? null}
+        editBusiness={business as unknown as import('@/api/business-registry.api').BusinessRecord | null}
       />
 
       {/* Delete Confirm Dialog */}
