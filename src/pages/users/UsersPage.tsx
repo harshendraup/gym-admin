@@ -107,15 +107,26 @@ function CreateTeamMemberDialog({
   )
 }
 
-function RoleBadge({ roleId, subAdminRoleId, memberRoleId }: { roleId: number | null; subAdminRoleId?: number; memberRoleId?: number }) {
-  if (roleId === subAdminRoleId) return <Badge>Sub Admin</Badge>
+function RoleBadge({
+  roleId,
+  adminRoleId,
+  subAdminRoleId,
+  memberRoleId,
+}: {
+  roleId: number | null
+  adminRoleId?: number
+  subAdminRoleId?: number
+  memberRoleId?: number
+}) {
+  if (roleId === adminRoleId) return <Badge>Admin</Badge>
+  if (roleId === subAdminRoleId) return <Badge variant="secondary">Sub Admin</Badge>
   if (roleId === memberRoleId) return <Badge variant="secondary">Member</Badge>
   return <Badge variant="outline">—</Badge>
 }
 
 export default function UsersPage() {
   const qc = useQueryClient()
-  const { subAdminRole, memberRole } = useRoles()
+  const { adminRole, subAdminRole, memberRole } = useRoles()
   const [createKind, setCreateKind] = useState<CreateKind | null>(null)
 
   const { data: users = [], isLoading } = useQuery({
@@ -203,20 +214,27 @@ export default function UsersPage() {
                       <TableCell>{u.email ?? '—'}</TableCell>
                       <TableCell>{u.mobile ?? '—'}</TableCell>
                       <TableCell>
-                        <RoleBadge roleId={u.roleId} subAdminRoleId={subAdminRole?.id} memberRoleId={memberRole?.id} />
+                        <RoleBadge
+                          roleId={u.roleId}
+                          adminRoleId={adminRole?.id}
+                          subAdminRoleId={subAdminRole?.id}
+                          memberRoleId={memberRole?.id}
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.status === 'Active' ? 'success' : 'secondary'}>{u.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteMutation.mutate(u.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {u.roleId !== adminRole?.id && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteMutation.mutate(u.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
