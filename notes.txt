@@ -1,0 +1,7 @@
+##########################Credentials######################
+
+Role	        Email	                        Password	            Scope
+Super Admin	    superadmin@gymos.com	        SuperAdmin@123	        Global — seeded account
+Admin	        admin@demofitness.test	        DemoAdmin@123	        Demo Fitness Co (all branches)
+Sub-Admin	    subadmin@demofitness.test	    DemoSubAdmin@123	    Demo Fitness Co → Downtown Branch only
+

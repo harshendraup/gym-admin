@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuthRole, AuthUser } from '@/api/auth.api'
+import { queryClient } from '@/lib/query-client'
 
 type User = AuthUser
 
@@ -35,8 +36,13 @@ export const useAuthStore = create<AuthState>()(
       gymContext: null,
       isAuthenticated: false,
 
-      setAuth: (user, accessToken, refreshToken, gymContext) =>
-        set({ user, accessToken, refreshToken, gymContext, isAuthenticated: true }),
+      setAuth: (user, accessToken, refreshToken, gymContext) => {
+        // Every login is a potential identity switch (different business/
+        // branch) — clear anything cached under the previous account
+        // before the new dashboard mounts and starts fetching.
+        queryClient.clear()
+        set({ user, accessToken, refreshToken, gymContext, isAuthenticated: true })
+      },
 
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
@@ -44,14 +50,16 @@ export const useAuthStore = create<AuthState>()(
       setGymContext: (gymContext) =>
         set({ gymContext }),
 
-      logout: () =>
+      logout: () => {
+        queryClient.clear()
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           gymContext: null,
           isAuthenticated: false,
-        }),
+        })
+      },
     }),
     {
       name: 'gymos-auth',

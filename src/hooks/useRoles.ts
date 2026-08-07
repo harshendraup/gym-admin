@@ -20,5 +20,6 @@ export function useRoles() {
     adminRole: byslug('admin'),
     subAdminRole: byslug('sub_admin'),
     memberRole: byslug('member'),
+    trainerRole: byslug('trainer'),
   }
 }

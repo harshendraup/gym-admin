@@ -30,11 +30,13 @@ const SuperAdminAdminsPage = lazy(() => import('@/pages/superadmin/SuperAdminAdm
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
 const AdminBranchesPage = lazy(() => import('@/pages/admin/AdminBranchesPage'))
 const AdminSubAdminsPage = lazy(() => import('@/pages/admin/AdminSubAdminsPage'))
+const AdminTrainersPage = lazy(() => import('@/pages/admin/AdminTrainersPage'))
 const AdminMembersPage = lazy(() => import('@/pages/admin/AdminMembersPage'))
 const AdminMemberDetailPage = lazy(() => import('@/pages/admin/AdminMemberDetailPage'))
 
 // Sub-Admin
 const SubAdminDashboardPage = lazy(() => import('@/pages/sub-admin/SubAdminDashboardPage'))
+const SubAdminTrainersPage = lazy(() => import('@/pages/sub-admin/SubAdminTrainersPage'))
 const SubAdminMembersPage = lazy(() => import('@/pages/sub-admin/SubAdminMembersPage'))
 const SubAdminMemberDetailPage = lazy(() => import('@/pages/sub-admin/SubAdminMemberDetailPage'))
 
@@ -76,6 +78,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: wrap(AdminDashboardPage) },
       { path: 'branches', element: wrap(AdminBranchesPage) },
       { path: 'sub-admins', element: wrap(AdminSubAdminsPage) },
+      { path: 'trainers', element: wrap(AdminTrainersPage) },
       { path: 'members', element: wrap(AdminMembersPage) },
       { path: 'members/:id', element: wrap(AdminMemberDetailPage) },
     ],
@@ -87,6 +90,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: wrap(SubAdminDashboardPage) },
+      { path: 'trainers', element: wrap(SubAdminTrainersPage) },
       { path: 'members', element: wrap(SubAdminMembersPage) },
       { path: 'members/:id', element: wrap(SubAdminMemberDetailPage) },
     ],

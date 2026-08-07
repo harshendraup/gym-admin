@@ -10,16 +10,18 @@ const navItems = [
   // Super Admin
   { to: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
   { to: '/superadmin/businesses', label: 'Businesses', icon: Building2, roles: ['superadmin'] },
-  { to: '/superadmin/admins', label: 'Admins & Sub-Admins', icon: UserCog, roles: ['superadmin'] },
+  { to: '/superadmin/admins', label: 'Team', icon: UserCog, roles: ['superadmin'] },
 
   // Admin
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { to: '/admin/branches', label: 'Branches', icon: Building2, roles: ['admin'] },
   { to: '/admin/sub-admins', label: 'Sub-Admins', icon: UserCog, roles: ['admin'] },
+  { to: '/admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['admin'] },
   { to: '/admin/members', label: 'Members', icon: Users, roles: ['admin'] },
 
   // Sub-Admin
   { to: '/sub-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['sub_admin'] },
+  { to: '/sub-admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['sub_admin'] },
   { to: '/sub-admin/members', label: 'Members', icon: Users, roles: ['sub_admin'] },
 ]
 
