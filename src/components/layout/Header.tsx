@@ -93,7 +93,10 @@ export function Header({ title }: HeaderProps) {
               <AvatarImage src={user?.avatarUrl} />
               <AvatarFallback
                 className="text-[10px] font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}
+                style={{
+                  background:
+                    'linear-gradient(135deg, hsl(var(--primary)) 0%, color-mix(in srgb, hsl(var(--primary)) 100%, black 18%) 100%)',
+                }}
               >
                 {getInitials(user?.fullName ?? 'U')}
               </AvatarFallback>

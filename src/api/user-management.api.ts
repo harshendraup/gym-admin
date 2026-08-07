@@ -28,6 +28,7 @@ export interface ManagedUserPayload {
   password?: string
   mobile?: string
   businessId?: number
+  branchId?: number
   roleId?: number
   status?: string
 }

@@ -3,26 +3,24 @@ import { useGymStore } from '@/store/gym.store'
 import { useAuthStore, selectRole } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Users, CreditCard, Dumbbell, Salad,
-  CalendarCheck, BarChart3, Bell, Settings,
-  UserCog, Layers, Zap, Building2,
+  LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2,
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['*'] },
-  { to: '/members', label: 'Members', icon: Users, roles: ['gym_owner', 'staff', 'superadmin'] },
-  { to: '/memberships', label: 'Subscription', icon: Layers, roles: ['*'] },
-  { to: '/users', label: 'Members', icon: Users, roles: ['admin'] },
-  { to: '/trainers', label: 'Trainner', icon: UserCog, roles: ['admin'] },
-  { to: '/payments', label: 'Payments', icon: CreditCard, roles: ['gym_owner', 'staff'] },
-  { to: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['*'] },
-  { to: '/workout-models', label: 'Workout Models', icon: Dumbbell, roles: ['admin'] },
-  { to: '/workouts', label: 'Workouts', icon: Dumbbell, roles: ['*'] },
-  { to: '/diet', label: 'Diet Plans', icon: Salad, roles: ['*'] },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['gym_owner', 'staff'] },
-  { to: '/notifications', label: 'Notifications', icon: Bell, roles: ['*'] },
-  { to: '/settings', label: 'Settings', icon: Settings, roles: ['gym_owner', 'admin'] },
-  { to: '/businesses', label: 'Businesses', icon: Building2, roles: ['superadmin'] },
+  // Super Admin
+  { to: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
+  { to: '/superadmin/businesses', label: 'Businesses', icon: Building2, roles: ['superadmin'] },
+  { to: '/superadmin/admins', label: 'Admins & Sub-Admins', icon: UserCog, roles: ['superadmin'] },
+
+  // Admin
+  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+  { to: '/admin/branches', label: 'Branches', icon: Building2, roles: ['admin'] },
+  { to: '/admin/sub-admins', label: 'Sub-Admins', icon: UserCog, roles: ['admin'] },
+  { to: '/admin/members', label: 'Members', icon: Users, roles: ['admin'] },
+
+  // Sub-Admin
+  { to: '/sub-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['sub_admin'] },
+  { to: '/sub-admin/members', label: 'Members', icon: Users, roles: ['sub_admin'] },
 ]
 
 export default function Sidebar() {
@@ -58,7 +56,10 @@ export default function Sidebar() {
         ) : (
           <div
             className="flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0 shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, hsl(var(--primary)) 0%, color-mix(in srgb, hsl(var(--primary)) 100%, black 18%) 100%)',
+            }}
           >
             <Dumbbell className="h-5 w-5 text-white" />
           </div>
@@ -68,8 +69,8 @@ export default function Sidebar() {
             {branding?.name ?? 'GymOS'}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-sm" />
-            <p className="text-xs capitalize" style={{ color: '#64748B' }}>
+            <div className="h-1.5 w-1.5 rounded-full" style={{ background: 'hsl(var(--primary))' }} />
+            <p className="text-xs font-medium capitalize" style={{ color: 'hsl(var(--primary))' }}>
               {(role || 'admin').replace('_', ' ')}
             </p>
           </div>
@@ -100,9 +101,10 @@ export default function Sidebar() {
                 style={({ isActive }) =>
                   isActive
                     ? {
-                      background: 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)',
-                      boxShadow: 'inset 2px 0 0 #2563EB, inset 0 1px 3px rgba(59,130,246,0.1)',
-                      border: '1px solid rgba(59,130,246,0.2)',
+                      background:
+                        'linear-gradient(135deg, hsl(var(--primary) / 0.15) 0%, hsl(var(--primary) / 0.08) 100%)',
+                      boxShadow: 'inset 2px 0 0 hsl(var(--primary)), inset 0 1px 3px hsl(var(--primary) / 0.1)',
+                      border: '1px solid hsl(var(--primary) / 0.2)',
                     }
                     : {
                       background: 'transparent',
@@ -114,10 +116,9 @@ export default function Sidebar() {
                     <item.icon
                       className={cn(
                         'h-4 w-4 flex-shrink-0 transition-colors duration-200',
-                        isActive
-                          ? 'text-blue-600'
-                          : 'text-slate-500 group-hover:text-slate-700'
+                        !isActive && 'text-slate-500 group-hover:text-slate-700'
                       )}
+                      style={isActive ? { color: 'hsl(var(--primary))' } : undefined}
                     />
                     {item.label}
                   </>
@@ -136,9 +137,9 @@ export default function Sidebar() {
         <div className="flex items-center gap-2.5">
           <div
             className="flex h-6 w-6 items-center justify-center rounded-md flex-shrink-0"
-            style={{ background: 'rgba(59,130,246,0.15)' }}
+            style={{ background: 'hsl(var(--primary) / 0.15)' }}
           >
-            <Zap className="h-3 w-3 text-blue-600" />
+            <Zap className="h-3 w-3" style={{ color: 'hsl(var(--primary))' }} />
           </div>
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: '#94a3b8' }}>

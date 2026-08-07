@@ -3,9 +3,13 @@ import Sidebar from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Toaster } from '@/components/ui/toaster'
 import { useGymStore } from '@/store/gym.store'
+import { useAuthStore, selectRole } from '@/store/auth.store'
+import { getRoleTheme } from '@/lib/role-theme'
 
 export default function AppLayout() {
   const branding = useGymStore((s) => s.branding)
+  const role = useAuthStore(selectRole)
+  const theme = getRoleTheme(role)
 
   return (
     <div
@@ -17,6 +21,14 @@ export default function AppLayout() {
           --color-primary: ${branding?.primaryColor ?? '#3B82F6'};
           --color-secondary: ${branding?.secondaryColor ?? '#22C55E'};
           --color-accent: ${branding?.accentColor ?? '#F59E0B'};
+
+          /* Role-scoped accent — drives every bg-primary/text-primary/
+             border-primary/ring-primary consumer (Button, Badge, stat
+             cards, focus rings, ...) so each role reads as visually
+             distinct without per-page overrides. */
+          --primary: ${theme.primary};
+          --primary-foreground: ${theme.primaryForeground};
+          --ring: ${theme.primary};
         }
       `}</style>
 
