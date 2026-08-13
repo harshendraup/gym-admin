@@ -83,7 +83,7 @@ export default function SuperAdminAdminsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Admins" />
+      {/* <Header title="Admins" /> */}
       <div className="flex-1 overflow-auto p-6">
         <EntityListPage
           title="Admins"

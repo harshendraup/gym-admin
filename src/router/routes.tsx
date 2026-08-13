@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AuthGuard from './guards/AuthGuard'
 import RoleLayout from './layouts/RoleLayout'
+import SubAdminRoleLayout from './layouts/SubAdminRoleLayout'
 import AuthLayout from './layouts/AuthLayout'
 import RoleRedirect from './RoleRedirect'
 
@@ -96,7 +97,7 @@ export const router = createBrowserRouter([
 
   {
     path: 'sub-admin',
-    element: <RoleLayout allowed={['sub_admin']} />,
+    element: <SubAdminRoleLayout />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: wrap(SubAdminDashboardPage) },

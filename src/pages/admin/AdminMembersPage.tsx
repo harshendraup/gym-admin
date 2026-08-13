@@ -75,7 +75,7 @@ export default function AdminMembersPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Members" />
+      {/* <Header title="Members" /> */}
       <div className="flex-1 overflow-auto p-6">
         <EntityListPage
           title="Members"

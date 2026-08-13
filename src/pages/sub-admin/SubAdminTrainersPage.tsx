@@ -1,69 +1,20 @@
 import { useMemo, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Trash2, Users } from 'lucide-react'
-import { Header } from '@/components/layout/Header'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { EntityListPage } from '@/components/entity/EntityListPage'
+import { Plus, Trash2, Mail, Phone, Users } from 'lucide-react'
 import { CreateScopedUserDialog } from '@/components/entity/CreateScopedUserDialog'
 import { TrainerMembersDialog } from '@/components/entity/TrainerMembersDialog'
 import { useRoles } from '@/hooks/useRoles'
 import { useUsersByRole, useDeleteUser } from '@/hooks/useUsers'
 import { useAuthStore } from '@/store/auth.store'
 import type { ManagedUser } from '@/api/user-management.api'
+import { T, mono } from '@/components/scoreboard/tokens'
+import { Hero, ScoreCard, ScoreboardCta, ScoreboardIconButton, RowCardList, RowCard, Avatar, StatusPill } from '@/components/scoreboard/primitives'
 
-function getColumns(
-  memberCount: (trainerId: string) => number,
-  onViewMembers: (u: ManagedUser) => void,
-  onDelete: (u: ManagedUser) => void,
-  deletingId: string | null
-): ColumnDef<ManagedUser>[] {
-  return [
-    {
-      header: 'Name',
-      cell: ({ row }) => (
-        <span className="font-medium text-slate-900">{row.original.fullName ?? row.original.firstName}</span>
-      ),
-    },
-    { header: 'Email', cell: ({ row }) => row.original.email ?? '—' },
-    { header: 'Mobile', cell: ({ row }) => row.original.mobile ?? '—' },
-    {
-      header: 'Status',
-      cell: ({ row }) => (
-        <Badge variant={row.original.status === 'Active' ? 'success' : 'secondary'}>
-          {row.original.status}
-        </Badge>
-      ),
-    },
-    {
-      header: 'Members',
-      cell: ({ row }) => {
-        const count = memberCount(row.original.id)
-        return (
-          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onViewMembers(row.original)}>
-            <Users className="mr-1.5 h-3.5 w-3.5" />
-            {count} {count === 1 ? 'member' : 'members'}
-          </Button>
-        )
-      },
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete(row.original)}
-            disabled={deletingId === row.original.id}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ]
+// Swap in a real coaching-staff photo here once available — see Hero's
+// placeholder fallback in the meantime.
+const HERO_IMAGE: string | null = null
+
+function initialsOf(name: string) {
+  return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
 export default function SubAdminTrainersPage() {
@@ -85,33 +36,65 @@ export default function SubAdminTrainersPage() {
     return map
   }, [members])
 
-  const columns = getColumns(
-    (trainerId) => membersByTrainer.get(trainerId)?.length ?? 0,
-    setViewingTrainer,
-    (u) => deleteUser.mutate(u.id),
-    deleteUser.isPending ? (deleteUser.variables ?? null) : null
-  )
+  const deletingId = deleteUser.isPending ? (deleteUser.variables ?? null) : null
 
   return (
-    <div className="flex flex-col h-full">
-      <Header title="Trainers" />
-      <div className="flex-1 overflow-auto p-6">
-        <EntityListPage
-          title="Trainers"
-          description="Trainers in your branch"
-          columns={columns}
-          data={trainers}
+    <>
+      <Hero
+        image={HERO_IMAGE}
+        placeholderLabel="coaching staff"
+        eyebrow="Coaching Staff"
+        title="Trainers"
+        subtitle="Every coach assigned to your branch, their reach, and their load."
+      />
+
+      <ScoreCard
+        title={`Roster · ${trainers?.length ?? 0}`}
+        subtitle="Trainers in your branch"
+        action={
+          <ScoreboardCta icon={Plus} onClick={() => setCreateOpen(true)}>
+            Add Trainer
+          </ScoreboardCta>
+        }
+      >
+        <RowCardList
           isLoading={isLoading}
           isError={isError}
           onRetry={refetch}
+          isEmpty={!isLoading && !isError && (trainers?.length ?? 0) === 0}
           emptyMessage="No trainers yet. Add the first one."
-          actions={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Trainer
-            </Button>
-          }
-        />
-      </div>
+        >
+          {trainers?.map((t) => {
+            const name = t.fullName ?? t.firstName
+            const count = membersByTrainer.get(t.id)?.length ?? 0
+            return (
+              <RowCard key={t.id} columns="auto 1.4fr 1.6fr 1.1fr 0.9fr 1fr auto">
+                <Avatar initials={initialsOf(name)} tone="ink" />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14.5, color: T.text }}>{name}</div>
+                  <div style={{ ...mono, fontSize: 10.5, color: T.dim, letterSpacing: '0.06em' }}>TRAINER</div>
+                </div>
+                <div style={{ fontSize: 13.5, color: T.dim, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Mail size={13} /> {t.email ?? '—'}
+                </div>
+                <div style={{ ...mono, fontSize: 13, color: T.text, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Phone size={13} color={T.dim} /> {t.mobile ?? '—'}
+                </div>
+                <div>
+                  <StatusPill tone={t.status === 'Active' ? 'forest' : 'amber'}>{t.status}</StatusPill>
+                </div>
+                <button
+                  onClick={() => setViewingTrainer(t)}
+                  style={{ fontSize: 13.5, color: T.text, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  <Users size={14} color={T.forest} /> {count} {count === 1 ? 'member' : 'members'}
+                </button>
+                <ScoreboardIconButton icon={Trash2} onClick={() => deleteUser.mutate(t.id)} disabled={deletingId === t.id} />
+              </RowCard>
+            )
+          })}
+        </RowCardList>
+      </ScoreCard>
 
       <CreateScopedUserDialog
         open={createOpen}
@@ -128,6 +111,6 @@ export default function SubAdminTrainersPage() {
         trainer={viewingTrainer}
         members={viewingTrainer ? membersByTrainer.get(viewingTrainer.id) ?? [] : []}
       />
-    </div>
+    </>
   )
 }

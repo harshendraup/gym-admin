@@ -124,7 +124,7 @@ export default function SuperAdminMembersPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Members" />
+      {/* <Header title="Members" /> */}
       <div className="flex-1 overflow-auto p-6 space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:max-w-lg">
           <div className="space-y-1.5">

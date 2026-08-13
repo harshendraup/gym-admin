@@ -1,57 +1,22 @@
 import { useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
-import { Header } from '@/components/layout/Header'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { EntityListPage } from '@/components/entity/EntityListPage'
+import { Plus, Flame, Trash2 } from 'lucide-react'
 import { CreateDietDialog } from '@/components/entity/CreateDietDialog'
 import { useDiets, useDeleteDiet } from '@/hooks/useDiets'
 import { useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
-import type { DietRecord, DietStatus } from '@/api/diets.api'
+import type { DietStatus } from '@/api/diets.api'
 import type { ManagedUser } from '@/api/user-management.api'
+import { T, mono } from '@/components/scoreboard/tokens'
+import { Hero, ScoreCard, ScoreboardCta, ScoreboardIconButton, RowCardList, RowCard, StatusPill } from '@/components/scoreboard/primitives'
 
-const statusVariant: Record<DietStatus, 'secondary' | 'success' | 'default'> = {
-  Draft: 'secondary',
-  Active: 'success',
-  Completed: 'default',
-}
+// Swap in a real nutrition/meal-prep photo here once available — see
+// Hero's placeholder fallback in the meantime.
+const HERO_IMAGE: string | null = null
 
-function getColumns(
-  memberName: (id: number) => string,
-  trainerName: (id: number | null) => string,
-  onDelete: (d: DietRecord) => void,
-  deletingId: number | null
-): ColumnDef<DietRecord>[] {
-  return [
-    { header: 'Plan', cell: ({ row }) => <span className="font-medium text-slate-900">{row.original.name}</span> },
-    { header: 'Member', cell: ({ row }) => memberName(row.original.clientId) },
-    { header: 'Trainer', cell: ({ row }) => trainerName(row.original.trainerId) },
-    { header: 'Goal', cell: ({ row }) => row.original.goal },
-    {
-      header: 'Status',
-      cell: ({ row }) => (
-        <Badge variant={statusVariant[row.original.status]}>{row.original.status}</Badge>
-      ),
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete(row.original)}
-            disabled={deletingId === row.original.id}
-          >
-            Remove
-          </Button>
-        </div>
-      ),
-    },
-  ]
+const statusTone: Record<DietStatus, 'forest' | 'amber' | 'signal'> = {
+  Draft: 'amber',
+  Active: 'forest',
+  Completed: 'forest',
 }
 
 function findUser(users: ManagedUser[], id: number | null) {
@@ -77,33 +42,72 @@ export default function SubAdminDietsPage() {
     return u ? (u.fullName ?? u.firstName) : `#${id}`
   }
 
-  const columns = getColumns(
-    memberName,
-    trainerName,
-    (d) => deleteDiet.mutate(d.id),
-    deleteDiet.isPending ? (deleteDiet.variables ?? null) : null
-  )
+  const deletingId = deleteDiet.isPending ? (deleteDiet.variables ?? null) : null
 
   return (
-    <div className="flex flex-col h-full">
-      <Header title="Diet Plans" />
-      <div className="flex-1 overflow-auto p-6">
-        <EntityListPage
-          title="Diet Plans"
-          description="Diet plans assigned to members in your branch"
-          columns={columns}
-          data={diets}
+    <>
+      <Hero
+        image={HERO_IMAGE}
+        placeholderLabel="nutrition"
+        eyebrow="Nutrition Programs"
+        title="Diet Plans"
+        subtitle="Plans assigned to members in your branch, tracked start to finish."
+      />
+
+      <ScoreCard
+        title={`Active Programs · ${diets?.length ?? 0}`}
+        subtitle="Diet plans assigned to members in your branch"
+        action={
+          <ScoreboardCta icon={Plus} onClick={() => setCreateOpen(true)}>
+            Assign Diet Plan
+          </ScoreboardCta>
+        }
+      >
+        <RowCardList
           isLoading={isLoading}
           isError={isError}
           onRetry={refetch}
+          isEmpty={!isLoading && !isError && (diets?.length ?? 0) === 0}
           emptyMessage="No diet plans yet. Assign the first one."
-          actions={
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Assign Diet Plan
-            </Button>
-          }
-        />
-      </div>
+        >
+          {diets?.map((d) => (
+            <RowCard key={d.id} columns="1.5fr 1.3fr 1.1fr 0.9fr 0.9fr auto">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,70,32,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Flame size={18} color={T.signal} />
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 14.5, color: T.text }}>{d.name}</div>
+              </div>
+              <div style={{ fontSize: 13.5, color: T.text }}>
+                <span style={{ ...mono, fontSize: 9.5, color: T.dim, display: 'block', letterSpacing: '0.06em' }}>MEMBER</span>
+                {memberName(d.clientId)}
+              </div>
+              <div style={{ fontSize: 13.5, color: T.text }}>
+                <span style={{ ...mono, fontSize: 9.5, color: T.dim, display: 'block', letterSpacing: '0.06em' }}>TRAINER</span>
+                {trainerName(d.trainerId)}
+              </div>
+              <div>
+                <span
+                  style={{
+                    ...mono,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: T.brass,
+                    background: '#FBF6EA',
+                    padding: '5px 10px',
+                    borderRadius: 8,
+                    border: `1px solid ${T.brass}55`,
+                  }}
+                >
+                  {d.goal}
+                </span>
+              </div>
+              <StatusPill tone={statusTone[d.status]}>{d.status}</StatusPill>
+              <ScoreboardIconButton icon={Trash2} label="Remove" onClick={() => deleteDiet.mutate(d.id)} disabled={deletingId === d.id} />
+            </RowCard>
+          ))}
+        </RowCardList>
+      </ScoreCard>
 
       <CreateDietDialog
         open={createOpen}
@@ -111,6 +115,6 @@ export default function SubAdminDietsPage() {
         memberOptions={members}
         trainerOptions={trainers}
       />
-    </div>
+    </>
   )
 }

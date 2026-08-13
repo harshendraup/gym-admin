@@ -35,6 +35,7 @@ export default function Sidebar() {
   const gymId = useGymStore((s) => s.gymId)
   const contextRole = useAuthStore(selectRole)
   const userRole = useAuthStore((s) => (s.user as any)?.role ?? '')
+  const userName = useAuthStore((s) => s.user?.fullName ?? s.user?.firstName ?? '')
   const role = (contextRole || userRole || '').toLowerCase()
 
   const visibleItems = navItems.filter(
@@ -81,6 +82,9 @@ export default function Sidebar() {
               {(role || 'admin').replace('_', ' ')}
             </p>
           </div>
+          {userName && (
+            <p className="text-xs text-slate-500 truncate max-w-[148px] mt-0.5">{userName}</p>
+          )}
         </div>
       </div>
 
