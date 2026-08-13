@@ -16,6 +16,7 @@ export interface ManagedUser {
   businessId: number | null
   branchId: number | null
   roleId: number | null
+  trainerId: number | null
   status: string
   createdAt: string
   updatedAt: string
@@ -30,6 +31,7 @@ export interface ManagedUserPayload {
   businessId?: number
   branchId?: number
   roleId?: number
+  trainerId?: number
   status?: string
 }
 

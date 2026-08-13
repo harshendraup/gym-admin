@@ -3,25 +3,30 @@ import { useGymStore } from '@/store/gym.store'
 import { useAuthStore, selectRole } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2,
+  LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2, Salad,
 } from 'lucide-react'
 
 const navItems = [
   // Super Admin
   { to: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
   { to: '/superadmin/businesses', label: 'Businesses', icon: Building2, roles: ['superadmin'] },
-  { to: '/superadmin/admins', label: 'Team', icon: UserCog, roles: ['superadmin'] },
+  { to: '/superadmin/admins', label: 'Admins', icon: UserCog, roles: ['superadmin'] },
+  { to: '/superadmin/sub-admins', label: 'Sub-Admins', icon: UserCog, roles: ['superadmin'] },
+  { to: '/superadmin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['superadmin'] },
+  { to: '/superadmin/members', label: 'Members', icon: Users, roles: ['superadmin'] },
 
   // Admin
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { to: '/admin/branches', label: 'Branches', icon: Building2, roles: ['admin'] },
   { to: '/admin/sub-admins', label: 'Sub-Admins', icon: UserCog, roles: ['admin'] },
   { to: '/admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['admin'] },
+  { to: '/admin/diets', label: 'Diet Plans', icon: Salad, roles: ['admin'] },
   { to: '/admin/members', label: 'Members', icon: Users, roles: ['admin'] },
 
   // Sub-Admin
   { to: '/sub-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['sub_admin'] },
   { to: '/sub-admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['sub_admin'] },
+  { to: '/sub-admin/diets', label: 'Diet Plans', icon: Salad, roles: ['sub_admin'] },
   { to: '/sub-admin/members', label: 'Members', icon: Users, roles: ['sub_admin'] },
 ]
 
@@ -68,7 +73,7 @@ export default function Sidebar() {
         )}
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 truncate max-w-[148px]">
-            {branding?.name ?? 'GymOS'}
+            {branding?.name ?? 'KrikalOne'}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <div className="h-1.5 w-1.5 rounded-full" style={{ background: 'hsl(var(--primary))' }} />

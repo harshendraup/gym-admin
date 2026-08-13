@@ -5,8 +5,10 @@ import { Toaster } from '@/components/ui/toaster'
 import { useGymStore } from '@/store/gym.store'
 import { useAuthStore, selectRole } from '@/store/auth.store'
 import { getRoleTheme } from '@/lib/role-theme'
+import { useBusinessBranding } from '@/hooks/useBusinessBranding'
 
 export default function AppLayout() {
+  useBusinessBranding()
   const branding = useGymStore((s) => s.branding)
   const role = useAuthStore(selectRole)
   const theme = getRoleTheme(role)

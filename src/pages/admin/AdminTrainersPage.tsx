@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Users } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EntityListPage } from '@/components/entity/EntityListPage'
 import { CreateScopedUserDialog } from '@/components/entity/CreateScopedUserDialog'
+import { TrainerMembersDialog } from '@/components/entity/TrainerMembersDialog'
 import { useRoles } from '@/hooks/useRoles'
 import { useUsersByRole, useDeleteUser } from '@/hooks/useUsers'
 import { useBranches } from '@/hooks/useBranches'
@@ -14,6 +15,8 @@ import type { ManagedUser } from '@/api/user-management.api'
 
 function getColumns(
   branchName: (id: number | null) => string,
+  memberCount: (trainerId: string) => number,
+  onViewMembers: (u: ManagedUser) => void,
   onDelete: (u: ManagedUser) => void,
   deletingId: string | null
 ): ColumnDef<ManagedUser>[] {
@@ -35,6 +38,18 @@ function getColumns(
       ),
     },
     {
+      header: 'Members',
+      cell: ({ row }) => {
+        const count = memberCount(row.original.id)
+        return (
+          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onViewMembers(row.original)}>
+            <Users className="mr-1.5 h-3.5 w-3.5" />
+            {count} {count === 1 ? 'member' : 'members'}
+          </Button>
+        )
+      },
+    },
+    {
       id: 'actions',
       header: '',
       cell: ({ row }) => (
@@ -54,16 +69,30 @@ function getColumns(
 }
 
 export default function AdminTrainersPage() {
-  const { trainerRole } = useRoles()
+  const { trainerRole, memberRole } = useRoles()
   const { data: trainers, isLoading, isError, refetch } = useUsersByRole(trainerRole?.id)
+  const { data: members = [] } = useUsersByRole(memberRole?.id)
   const gymContext = useAuthStore((s) => s.gymContext)
   const { data: branches = [] } = useBranches(gymContext?.businessId)
   const [createOpen, setCreateOpen] = useState(false)
+  const [viewingTrainer, setViewingTrainer] = useState<ManagedUser | null>(null)
   const deleteUser = useDeleteUser()
+
+  const membersByTrainer = useMemo(() => {
+    const map = new Map<string, ManagedUser[]>()
+    for (const m of members) {
+      if (!m.trainerId) continue
+      const key = String(m.trainerId)
+      map.set(key, [...(map.get(key) ?? []), m])
+    }
+    return map
+  }, [members])
 
   const branchName = (id: number | null) => branches.find((b) => b.id === id)?.branchName ?? '—'
   const columns = getColumns(
     branchName,
+    (trainerId) => membersByTrainer.get(trainerId)?.length ?? 0,
+    setViewingTrainer,
     (u) => deleteUser.mutate(u.id),
     deleteUser.isPending ? (deleteUser.variables ?? null) : null
   )
@@ -96,6 +125,13 @@ export default function AdminTrainersPage() {
         roleLabel="Trainer"
         businessId={gymContext?.businessId ? Number(gymContext.businessId) : undefined}
         branchRequired
+      />
+
+      <TrainerMembersDialog
+        open={!!viewingTrainer}
+        onClose={() => setViewingTrainer(null)}
+        trainer={viewingTrainer}
+        members={viewingTrainer ? membersByTrainer.get(viewingTrainer.id) ?? [] : []}
       />
     </div>
   )

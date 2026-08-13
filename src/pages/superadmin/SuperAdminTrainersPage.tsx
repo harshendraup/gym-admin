@@ -1,20 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Trash2, Users } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EntityListPage } from '@/components/entity/EntityListPage'
 import { CreateScopedUserDialog } from '@/components/entity/CreateScopedUserDialog'
-import { TrainerMembersDialog } from '@/components/entity/TrainerMembersDialog'
 import { useRoles } from '@/hooks/useRoles'
 import { useUsersByRole, useDeleteUser } from '@/hooks/useUsers'
-import { useAuthStore } from '@/store/auth.store'
+import { businessRegistryApi } from '@/api/business-registry.api'
 import type { ManagedUser } from '@/api/user-management.api'
 
 function getColumns(
-  memberCount: (trainerId: string) => number,
-  onViewMembers: (u: ManagedUser) => void,
+  businessName: (id: number | null) => string,
   onDelete: (u: ManagedUser) => void,
   deletingId: string | null
 ): ColumnDef<ManagedUser>[] {
@@ -26,7 +25,7 @@ function getColumns(
       ),
     },
     { header: 'Email', cell: ({ row }) => row.original.email ?? '—' },
-    { header: 'Mobile', cell: ({ row }) => row.original.mobile ?? '—' },
+    { header: 'Business', cell: ({ row }) => businessName(row.original.businessId) },
     {
       header: 'Status',
       cell: ({ row }) => (
@@ -34,18 +33,6 @@ function getColumns(
           {row.original.status}
         </Badge>
       ),
-    },
-    {
-      header: 'Members',
-      cell: ({ row }) => {
-        const count = memberCount(row.original.id)
-        return (
-          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onViewMembers(row.original)}>
-            <Users className="mr-1.5 h-3.5 w-3.5" />
-            {count} {count === 1 ? 'member' : 'members'}
-          </Button>
-        )
-      },
     },
     {
       id: 'actions',
@@ -66,29 +53,26 @@ function getColumns(
   ]
 }
 
-export default function SubAdminTrainersPage() {
-  const { trainerRole, memberRole } = useRoles()
-  const { data: trainers, isLoading, isError, refetch } = useUsersByRole(trainerRole?.id)
-  const { data: members = [] } = useUsersByRole(memberRole?.id)
-  const gymContext = useAuthStore((s) => s.gymContext)
+export default function SuperAdminTrainersPage() {
   const [createOpen, setCreateOpen] = useState(false)
-  const [viewingTrainer, setViewingTrainer] = useState<ManagedUser | null>(null)
+
+  const { data: businesses = [] } = useQuery({
+    queryKey: ['businesses'],
+    queryFn: () => businessRegistryApi.list(),
+  })
+  const businessName = (id: number | null) => businesses.find((b) => b.id === id)?.businessName ?? '—'
+
+  const { trainerRole } = useRoles()
+  const trainers = useUsersByRole(trainerRole?.id)
   const deleteUser = useDeleteUser()
 
-  const membersByTrainer = useMemo(() => {
-    const map = new Map<string, ManagedUser[]>()
-    for (const m of members) {
-      if (!m.trainerId) continue
-      const key = String(m.trainerId)
-      map.set(key, [...(map.get(key) ?? []), m])
-    }
-    return map
-  }, [members])
-
   const columns = getColumns(
-    (trainerId) => membersByTrainer.get(trainerId)?.length ?? 0,
-    setViewingTrainer,
-    (u) => deleteUser.mutate(u.id),
+    businessName,
+    (u) => {
+      if (window.confirm(`Delete trainer "${u.fullName ?? u.firstName}"? They will lose access immediately.`)) {
+        deleteUser.mutate(u.id)
+      }
+    },
     deleteUser.isPending ? (deleteUser.variables ?? null) : null
   )
 
@@ -98,13 +82,13 @@ export default function SubAdminTrainersPage() {
       <div className="flex-1 overflow-auto p-6">
         <EntityListPage
           title="Trainers"
-          description="Trainers in your branch"
+          description="Branch trainers across the platform"
           columns={columns}
-          data={trainers}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="No trainers yet. Add the first one."
+          data={trainers.data}
+          isLoading={trainers.isLoading}
+          isError={trainers.isError}
+          onRetry={trainers.refetch}
+          emptyMessage="No trainers yet."
           actions={
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" /> Add Trainer
@@ -118,15 +102,8 @@ export default function SubAdminTrainersPage() {
         onClose={() => setCreateOpen(false)}
         roleId={trainerRole?.id}
         roleLabel="Trainer"
-        businessId={gymContext?.businessId ? Number(gymContext.businessId) : undefined}
-        branchId={gymContext?.branchId ? Number(gymContext.branchId) : undefined}
-      />
-
-      <TrainerMembersDialog
-        open={!!viewingTrainer}
-        onClose={() => setViewingTrainer(null)}
-        trainer={viewingTrainer}
-        members={viewingTrainer ? membersByTrainer.get(viewingTrainer.id) ?? [] : []}
+        businessOptions={businesses}
+        branchRequired
       />
     </div>
   )

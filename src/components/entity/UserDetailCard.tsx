@@ -1,4 +1,4 @@
-import { Mail, Phone, Building2, MapPin, Calendar, Trash2, ArrowLeft } from 'lucide-react'
+import { Mail, Phone, Building2, MapPin, Calendar, Trash2, Pencil, ArrowLeft, Dumbbell, UserCog, Salad } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,8 +12,17 @@ interface UserDetailCardProps {
   businessLabel?: string
   branchLabel?: string
   onBack?: () => void
+  onEdit?: () => void
   onDelete?: () => void
   isDeleting?: boolean
+  /** Member-only: name of the currently assigned trainer, if any. */
+  trainerName?: string
+  /** Member-only: opens the trainer-assignment dialog. */
+  onAssignTrainer?: () => void
+  /** Member-only: number of diet plans assigned to this member. */
+  dietCount?: number
+  /** Member-only: opens the diet-plans dialog (view history + assign new). */
+  onViewDiets?: () => void
 }
 
 /**
@@ -26,8 +35,13 @@ export function UserDetailCard({
   businessLabel,
   branchLabel,
   onBack,
+  onEdit,
   onDelete,
   isDeleting,
+  trainerName,
+  onAssignTrainer,
+  dietCount,
+  onViewDiets,
 }: UserDetailCardProps) {
   const displayName = user.fullName ?? user.firstName
 
@@ -59,12 +73,20 @@ export function UserDetailCard({
                 </div>
               </div>
             </div>
-            {onDelete && (
-              <Button variant="destructive" size="sm" onClick={onDelete} disabled={isDeleting}>
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                {isDeleting ? 'Removing...' : 'Remove'}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {onEdit && (
+                <Button variant="outline" size="sm" onClick={onEdit}>
+                  <Pencil className="mr-1.5 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="destructive" size="sm" onClick={onDelete} disabled={isDeleting}>
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  {isDeleting ? 'Removing...' : 'Remove'}
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -77,6 +99,42 @@ export function UserDetailCard({
               label="Joined"
               value={user.createdAt ? formatDate(user.createdAt) : '—'}
             />
+            {onAssignTrainer && (
+              <div className="flex items-start gap-2.5">
+                <Dumbbell className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#94a3b8' }} />
+                <div>
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-wider"
+                    style={{ color: '#94a3b8' }}
+                  >
+                    Trainer
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-slate-900">{trainerName ?? 'No trainer assigned'}</p>
+                    <Button variant="link" size="sm" className="h-auto p-0" onClick={onAssignTrainer}>
+                      <UserCog className="mr-1 h-3 w-3" />
+                      {trainerName ? 'Change' : 'Assign'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {onViewDiets && (
+              <div className="flex items-start gap-2.5">
+                <Salad className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#94a3b8' }} />
+                <div>
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-wider"
+                    style={{ color: '#94a3b8' }}
+                  >
+                    Diet Plans
+                  </p>
+                  <Button variant="link" size="sm" className="h-auto p-0" onClick={onViewDiets}>
+                    {dietCount ?? 0} {dietCount === 1 ? 'plan' : 'plans'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

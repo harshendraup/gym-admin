@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, Trash2 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
@@ -9,13 +9,11 @@ import { EntityListPage } from '@/components/entity/EntityListPage'
 import { CreateScopedUserDialog } from '@/components/entity/CreateScopedUserDialog'
 import { useRoles } from '@/hooks/useRoles'
 import { useUsersByRole, useDeleteUser } from '@/hooks/useUsers'
-import { useBranches } from '@/hooks/useBranches'
-import { useAuthStore } from '@/store/auth.store'
+import { businessRegistryApi } from '@/api/business-registry.api'
 import type { ManagedUser } from '@/api/user-management.api'
 
 function getColumns(
-  branchName: (id: number | null) => string,
-  onView: (u: ManagedUser) => void,
+  businessName: (id: number | null) => string,
   onDelete: (u: ManagedUser) => void,
   deletingId: string | null
 ): ColumnDef<ManagedUser>[] {
@@ -27,7 +25,7 @@ function getColumns(
       ),
     },
     { header: 'Email', cell: ({ row }) => row.original.email ?? '—' },
-    { header: 'Branch', cell: ({ row }) => branchName(row.original.branchId) },
+    { header: 'Business', cell: ({ row }) => businessName(row.original.businessId) },
     {
       header: 'Status',
       cell: ({ row }) => (
@@ -40,8 +38,7 @@ function getColumns(
       id: 'actions',
       header: '',
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button size="sm" variant="outline" onClick={() => onView(row.original)}>View</Button>
+        <div className="flex justify-end">
           <Button
             size="sm"
             variant="destructive"
@@ -56,39 +53,45 @@ function getColumns(
   ]
 }
 
-export default function AdminMembersPage() {
-  const navigate = useNavigate()
-  const { memberRole } = useRoles()
-  const { data: members, isLoading, isError, refetch } = useUsersByRole(memberRole?.id)
-  const gymContext = useAuthStore((s) => s.gymContext)
-  const { data: branches = [] } = useBranches(gymContext?.businessId)
+export default function SuperAdminSubAdminsPage() {
   const [createOpen, setCreateOpen] = useState(false)
+
+  const { data: businesses = [] } = useQuery({
+    queryKey: ['businesses'],
+    queryFn: () => businessRegistryApi.list(),
+  })
+  const businessName = (id: number | null) => businesses.find((b) => b.id === id)?.businessName ?? '—'
+
+  const { subAdminRole } = useRoles()
+  const subAdmins = useUsersByRole(subAdminRole?.id)
   const deleteUser = useDeleteUser()
 
-  const branchName = (id: number | null) => branches.find((b) => b.id === id)?.branchName ?? '—'
   const columns = getColumns(
-    branchName,
-    (u) => navigate(`/admin/members/${u.id}`),
-    (u) => deleteUser.mutate(u.id),
+    businessName,
+    (u) => {
+      if (window.confirm(`Delete sub-admin "${u.fullName ?? u.firstName}"? They will lose access immediately.`)) {
+        deleteUser.mutate(u.id)
+      }
+    },
     deleteUser.isPending ? (deleteUser.variables ?? null) : null
   )
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Members" />
+      <Header title="Sub-Admins" />
       <div className="flex-1 overflow-auto p-6">
         <EntityListPage
-          title="Members"
-          description="Members across your business's branches"
+          title="Sub-Admins"
+          description="Branch managers across the platform"
           columns={columns}
-          data={members}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="No members yet. Add the first one."
+          data={subAdmins.data}
+          isLoading={subAdmins.isLoading}
+          isError={subAdmins.isError}
+          onRetry={subAdmins.refetch}
+          emptyMessage="No sub-admins yet."
           actions={
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Member
+              <Plus className="mr-1.5 h-4 w-4" /> Add Sub-Admin
             </Button>
           }
         />
@@ -97,9 +100,9 @@ export default function AdminMembersPage() {
       <CreateScopedUserDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        roleId={memberRole?.id}
-        roleLabel="Member"
-        businessId={gymContext?.businessId ? Number(gymContext.businessId) : undefined}
+        roleId={subAdminRole?.id}
+        roleLabel="Sub-Admin"
+        businessOptions={businesses}
         branchRequired
       />
     </div>

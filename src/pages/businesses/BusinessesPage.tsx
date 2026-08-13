@@ -12,7 +12,9 @@ import {
 } from 'lucide-react'
 import DataTable from '@/components/data-table/DataTable'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ImageDropzone } from '@/components/common/ImageDropzone'
 import { toast } from '@/hooks/use-toast'
+import { useUploadBusinessLogo } from '@/hooks/useUploads'
 import {
   businessRegistryApi,
   type BusinessRecord,
@@ -344,9 +346,11 @@ export function BusinessFormDialog({
   const [businessKey, setBusinessKey] = useState('')
   const [showKeyWarning, setShowKeyWarning] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<BusinessFormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<BusinessFormValues>({
     resolver: zodResolver(businessSchema),
   })
+  const uploadLogo = useUploadBusinessLogo()
+  const businessLogo = watch('businessLogo')
 
   useEffect(() => {
     if (open && editBusiness) {
@@ -500,8 +504,12 @@ export function BusinessFormDialog({
               <FormField label="Address" error={errors.address?.message}>
                 <GlassTextarea placeholder="Street, city, state, pincode" {...register('address')} />
               </FormField>
-              <FormField label="Business Logo URL" error={errors.businessLogo?.message}>
-                <GlassInput type="url" placeholder="https://example.com/logo.png" {...register('businessLogo')} />
+              <FormField label="Business Logo" error={errors.businessLogo?.message}>
+                <ImageDropzone
+                  value={businessLogo}
+                  onChange={(url) => setValue('businessLogo', url, { shouldValidate: true })}
+                  onUpload={(file) => uploadLogo.mutateAsync(file)}
+                />
               </FormField>
             </div>
 

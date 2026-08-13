@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuthRole, AuthUser } from '@/api/auth.api'
 import { queryClient } from '@/lib/query-client'
+import { useGymStore } from '@/store/gym.store'
 
 type User = AuthUser
 
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
         // branch) — clear anything cached under the previous account
         // before the new dashboard mounts and starts fetching.
         queryClient.clear()
+        useGymStore.getState().clearGym()
         set({ user, accessToken, refreshToken, gymContext, isAuthenticated: true })
       },
 
@@ -52,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         queryClient.clear()
+        useGymStore.getState().clearGym()
         set({
           user: null,
           accessToken: null,
