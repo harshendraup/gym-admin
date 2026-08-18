@@ -70,7 +70,7 @@ export default function AdminSubAdminsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Sub-Admins" />
+      {/* <Header title="Sub-Admins" /> */}
       <div className="flex-1 overflow-auto p-6">
         <EntityListPage
           title="Sub-Admins"

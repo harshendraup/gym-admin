@@ -3,7 +3,7 @@ import { useGymStore } from '@/store/gym.store'
 import { useAuthStore, selectRole } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2, Salad,
+  LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2, Salad, Activity,
 } from 'lucide-react'
 
 const navItems = [
@@ -21,12 +21,14 @@ const navItems = [
   { to: '/admin/sub-admins', label: 'Sub-Admins', icon: UserCog, roles: ['admin'] },
   { to: '/admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['admin'] },
   { to: '/admin/diets', label: 'Diet Plans', icon: Salad, roles: ['admin'] },
+  { to: '/admin/training-programs', label: 'Training Programs', icon: Activity, roles: ['admin'] },
   { to: '/admin/members', label: 'Members', icon: Users, roles: ['admin'] },
 
   // Sub-Admin
   { to: '/sub-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['sub_admin'] },
   { to: '/sub-admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['sub_admin'] },
   { to: '/sub-admin/diets', label: 'Diet Plans', icon: Salad, roles: ['sub_admin'] },
+  { to: '/sub-admin/training-programs', label: 'Training Programs', icon: Activity, roles: ['sub_admin'] },
   { to: '/sub-admin/members', label: 'Members', icon: Users, roles: ['sub_admin'] },
 ]
 

@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Dumbbell, UtensilsCrossed, Users, LogOut, Trophy, ChevronRight } from 'lucide-react'
+import {
+  LayoutDashboard, Dumbbell, UtensilsCrossed, Users, LogOut, Trophy, ChevronRight, Activity,
+} from 'lucide-react'
 import { useGymStore } from '@/store/gym.store'
 import { useAuthStore } from '@/store/auth.store'
 import { useBusinessBranding } from '@/hooks/useBusinessBranding'
@@ -9,6 +11,7 @@ const NAV = [
   { to: '/sub-admin/dashboard', key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/sub-admin/trainers', key: 'trainers', label: 'Trainers', icon: Dumbbell },
   { to: '/sub-admin/diets', key: 'diets', label: 'Diet Plans', icon: UtensilsCrossed },
+  { to: '/sub-admin/training-programs', key: 'training-programs', label: 'Training Programs', icon: Activity },
   { to: '/sub-admin/members', key: 'members', label: 'Members', icon: Users },
 ]
 

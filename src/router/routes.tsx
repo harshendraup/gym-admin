@@ -36,6 +36,7 @@ const AdminBranchesPage = lazy(() => import('@/pages/admin/AdminBranchesPage'))
 const AdminSubAdminsPage = lazy(() => import('@/pages/admin/AdminSubAdminsPage'))
 const AdminTrainersPage = lazy(() => import('@/pages/admin/AdminTrainersPage'))
 const AdminDietsPage = lazy(() => import('@/pages/admin/AdminDietsPage'))
+const AdminTrainingProgramsPage = lazy(() => import('@/pages/admin/AdminTrainingProgramsPage'))
 const AdminMembersPage = lazy(() => import('@/pages/admin/AdminMembersPage'))
 const AdminMemberDetailPage = lazy(() => import('@/pages/admin/AdminMemberDetailPage'))
 
@@ -43,6 +44,7 @@ const AdminMemberDetailPage = lazy(() => import('@/pages/admin/AdminMemberDetail
 const SubAdminDashboardPage = lazy(() => import('@/pages/sub-admin/SubAdminDashboardPage'))
 const SubAdminTrainersPage = lazy(() => import('@/pages/sub-admin/SubAdminTrainersPage'))
 const SubAdminDietsPage = lazy(() => import('@/pages/sub-admin/SubAdminDietsPage'))
+const SubAdminTrainingProgramsPage = lazy(() => import('@/pages/sub-admin/SubAdminTrainingProgramsPage'))
 const SubAdminMembersPage = lazy(() => import('@/pages/sub-admin/SubAdminMembersPage'))
 const SubAdminMemberDetailPage = lazy(() => import('@/pages/sub-admin/SubAdminMemberDetailPage'))
 
@@ -90,6 +92,7 @@ export const router = createBrowserRouter([
       { path: 'sub-admins', element: wrap(AdminSubAdminsPage) },
       { path: 'trainers', element: wrap(AdminTrainersPage) },
       { path: 'diets', element: wrap(AdminDietsPage) },
+      { path: 'training-programs', element: wrap(AdminTrainingProgramsPage) },
       { path: 'members', element: wrap(AdminMembersPage) },
       { path: 'members/:id', element: wrap(AdminMemberDetailPage) },
     ],
@@ -103,6 +106,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: wrap(SubAdminDashboardPage) },
       { path: 'trainers', element: wrap(SubAdminTrainersPage) },
       { path: 'diets', element: wrap(SubAdminDietsPage) },
+      { path: 'training-programs', element: wrap(SubAdminTrainingProgramsPage) },
       { path: 'members', element: wrap(SubAdminMembersPage) },
       { path: 'members/:id', element: wrap(SubAdminMemberDetailPage) },
     ],
