@@ -1,4 +1,4 @@
-import { get, post, del } from './client'
+import { get, post, put, del } from './client'
 
 /**
  * The real `/program-assignments` resource (gym-os-api) — "assign this
@@ -67,6 +67,9 @@ export const programAssignmentsApi = {
 
   create: (data: CreateProgramAssignmentPayload) =>
     post<ProgramAssignmentRecord>('/program-assignments', data),
+
+  update: (id: number, data: UpdateProgramAssignmentPayload) =>
+    put<ProgramAssignmentRecord>(`/program-assignments/${id}`, data),
 
   delete: (id: number) => del<void>(`/program-assignments/${id}`),
 

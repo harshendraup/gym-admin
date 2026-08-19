@@ -233,7 +233,7 @@ export function InfoPlate({ icon: Icon, label, value }: { icon: LucideIcon; labe
   )
 }
 
-export function ScoreCard({ title, subtitle, children, action }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode }) {
+export function ScoreCard({ title, subtitle, children, action }: { title: string; subtitle?: ReactNode; children: ReactNode; action?: ReactNode }) {
   return (
     <div style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: '18px', padding: '22px 22px 18px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: 12, flexWrap: 'wrap' }}>

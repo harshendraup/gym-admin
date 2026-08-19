@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel,
 } from '@/components/ui/select'
 import { CreateExerciseDialog } from './CreateExerciseDialog'
 import { useExercises } from '@/hooks/useExercises'
@@ -17,9 +17,12 @@ import type { BranchRecord } from '@/api/branches.api'
 import type {
   TrainingProgramGoal, TrainingProgramDifficulty, ProgramDayInput,
 } from '@/api/training-programs.api'
+import type { ExerciseCategory } from '@/api/exercises.api'
+import type { GymLibraryCategory } from '@/api/exercise-library-config.api'
 
 const GOALS: TrainingProgramGoal[] = ['Weight Loss', 'Muscle Gain', 'General Fitness', 'Rehab']
 const DIFFICULTIES: TrainingProgramDifficulty[] = ['Beginner', 'Intermediate', 'Advanced']
+const CATEGORY_ORDER: ExerciseCategory[] = ['Strength', 'Cardio', 'Mobility', 'Flexibility', 'Balance']
 
 interface ExerciseDraft {
   key: string
@@ -27,6 +30,8 @@ interface ExerciseDraft {
   sets: string
   reps: string
   restSeconds: string
+  weightGuidance: string
+  tempo: string
   notes: string
 }
 
@@ -41,7 +46,7 @@ let draftKeySeq = 0
 const nextKey = () => String(draftKeySeq++)
 
 function emptyExercise(): ExerciseDraft {
-  return { key: nextKey(), exerciseId: '', sets: '', reps: '', restSeconds: '', notes: '' }
+  return { key: nextKey(), exerciseId: '', sets: '', reps: '', restSeconds: '', weightGuidance: '', tempo: '', notes: '' }
 }
 
 function emptyDay(dayNumber: number): DayDraft {
@@ -54,26 +59,30 @@ interface CreateTrainingProgramDialogProps {
   /** Branches the acting user may create a program for. Omit and pass fixedBranchId for a branch-locked role (sub_admin). */
   branchOptions?: BranchRecord[]
   fixedBranchId?: number
+  /** The gym's Set Up Exercise Library selection — passed through to the embedded "+ New Exercise" dialog so it offers the same scoped list as everywhere else. */
+  libraryCatalog?: GymLibraryCategory[]
 }
 
 /**
  * Builds a training program template — name/goal/duration plus a Day 1 /
  * Day 2 / ... structure, each day holding a set of exercises with their
- * prescription (sets/reps/rest). Days live as local draft state rather
- * than react-hook-form's field arrays, since the exercise-within-day
- * nesting is two levels deep; the whole draft is assembled into one
- * payload on submit, matching what the backend's nested `days` array
- * expects.
+ * prescription (sets/reps/rest/weight/tempo/instructions). Days live as
+ * local draft state rather than react-hook-form's field arrays, since the
+ * exercise-within-day nesting is two levels deep; the whole draft is
+ * assembled into one payload on submit, matching what the backend's nested
+ * `days` array expects.
  */
 export function CreateTrainingProgramDialog({
   open,
   onClose,
   branchOptions,
   fixedBranchId,
+  libraryCatalog,
 }: CreateTrainingProgramDialogProps) {
   const { data: exercises = [] } = useExercises()
   const create = useCreateTrainingProgram()
-  const [addExerciseOpen, setAddExerciseOpen] = useState(false)
+  const [addExerciseForDay, setAddExerciseForDay] = useState<string | null>(null)
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set())
 
   const [branchId, setBranchId] = useState('')
   const [name, setName] = useState('')
@@ -94,8 +103,23 @@ export function CreateTrainingProgramDialog({
       setDifficultyLevel('Beginner')
       setDays([emptyDay(1)])
       setError('')
+      setExpandedDetails(new Set())
     }
   }, [open, fixedBranchId])
+
+  // Grouped by category so a gym with a large library can scan by type
+  // instead of hunting through one long alphabetical list.
+  const groupedExercises = useMemo(() => {
+    const byCategory = new Map<ExerciseCategory, typeof exercises>()
+    for (const ex of exercises) {
+      const list = byCategory.get(ex.category) ?? []
+      list.push(ex)
+      byCategory.set(ex.category, list)
+    }
+    return CATEGORY_ORDER.map((category) => ({ category, items: byCategory.get(category) ?? [] })).filter(
+      (g) => g.items.length > 0
+    )
+  }, [exercises])
 
   const updateDay = (key: string, patch: Partial<DayDraft>) =>
     setDays((prev) => prev.map((d) => (d.key === key ? { ...d, ...patch } : d)))
@@ -127,6 +151,24 @@ export function CreateTrainingProgramDialog({
       ;[next[index], next[target]] = [next[target], next[index]]
       return next
     })
+  const toggleDetails = (exKey: string) =>
+    setExpandedDetails((prev) => {
+      const next = new Set(prev)
+      next.has(exKey) ? next.delete(exKey) : next.add(exKey)
+      return next
+    })
+
+  // A brand-new exercise created via "+ New Exercise" is appended as its own
+  // pre-filled row on the day that triggered it, rather than asking the user
+  // to find it again in the picker they just left.
+  const handleExerciseCreated = (exerciseId: number) => {
+    if (!addExerciseForDay) return
+    const dayKey = addExerciseForDay
+    setDays((prev) =>
+      prev.map((d) => (d.key !== dayKey ? d : { ...d, exercises: [...d.exercises, { ...emptyExercise(), exerciseId: String(exerciseId) }] }))
+    )
+    setAddExerciseForDay(null)
+  }
 
   const onSubmit = () => {
     setError('')
@@ -147,6 +189,8 @@ export function CreateTrainingProgramDialog({
               sets: e.sets ? Number(e.sets) : undefined,
               reps: e.reps || undefined,
               restSeconds: e.restSeconds ? Number(e.restSeconds) : undefined,
+              weightGuidance: e.weightGuidance || undefined,
+              tempo: e.tempo || undefined,
               notes: e.notes || undefined,
               orderIndex: exIndex,
             })),
@@ -173,6 +217,10 @@ export function CreateTrainingProgramDialog({
           <DialogHeader>
             <DialogTitle>Create Training Program</DialogTitle>
           </DialogHeader>
+          <p className="-mt-1 text-sm text-muted-foreground">
+            Build a reusable workout template — give it a name and goal, lay out each training day, and pick the
+            exercises for it. You'll assign it to specific members afterwards from Assigned Programs.
+          </p>
 
           <div className="space-y-4">
             {!fixedBranchId && (
@@ -229,11 +277,16 @@ export function CreateTrainingProgramDialog({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base">Program Days</Label>
-                <Button type="button" size="sm" variant="outline" onClick={addDay}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Day
-                </Button>
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-base">Training Days</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={addDay}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Day
+                  </Button>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Add each training day — e.g. Push Day, Pull Day, Leg Day — and the exercises members should do on it.
+                </p>
               </div>
 
               {days.map((day, dayIndex) => (
@@ -272,29 +325,71 @@ export function CreateTrainingProgramDialog({
 
                   {!day.restDay && (
                     <div className="space-y-2 pl-8">
-                      {day.exercises.map((ex) => (
-                        <div key={ex.key} className="grid grid-cols-[1.6fr_0.6fr_0.7fr_0.7fr_auto] gap-2 items-center">
-                          <Select value={ex.exerciseId} onValueChange={(v) => updateExercise(day.key, ex.key, { exerciseId: v })}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Exercise..." /></SelectTrigger>
-                            <SelectContent>
-                              {exercises.map((x) => (
-                                <SelectItem key={x.id} value={String(x.id)}>{x.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input className="h-8 text-xs" placeholder="Sets" type="number" value={ex.sets} onChange={(e) => updateExercise(day.key, ex.key, { sets: e.target.value })} />
-                          <Input className="h-8 text-xs" placeholder="Reps" value={ex.reps} onChange={(e) => updateExercise(day.key, ex.key, { reps: e.target.value })} />
-                          <Input className="h-8 text-xs" placeholder="Rest (s)" type="number" value={ex.restSeconds} onChange={(e) => updateExercise(day.key, ex.key, { restSeconds: e.target.value })} />
-                          <Button type="button" size="icon" variant="ghost" onClick={() => removeExercise(day.key, ex.key)}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
+                      {day.exercises.map((ex) => {
+                        const detailsOpen = expandedDetails.has(ex.key)
+                        return (
+                          <div key={ex.key} className="space-y-1.5">
+                            <div className="grid grid-cols-[1.6fr_0.6fr_0.7fr_0.7fr_auto_auto] gap-2 items-center">
+                              <Select value={ex.exerciseId} onValueChange={(v) => updateExercise(day.key, ex.key, { exerciseId: v })}>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Exercise..." /></SelectTrigger>
+                                <SelectContent>
+                                  {groupedExercises.map(({ category, items }) => (
+                                    <SelectGroup key={category}>
+                                      <SelectLabel>{category}</SelectLabel>
+                                      {items.map((x) => (
+                                        <SelectItem key={x.id} value={String(x.id)}>{x.name}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input className="h-8 text-xs" placeholder="Sets" type="number" value={ex.sets} onChange={(e) => updateExercise(day.key, ex.key, { sets: e.target.value })} />
+                              <Input className="h-8 text-xs" placeholder="Reps" value={ex.reps} onChange={(e) => updateExercise(day.key, ex.key, { reps: e.target.value })} />
+                              <Input className="h-8 text-xs" placeholder="Rest (s)" type="number" value={ex.restSeconds} onChange={(e) => updateExercise(day.key, ex.key, { restSeconds: e.target.value })} />
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant={detailsOpen ? 'secondary' : 'ghost'}
+                                title="Weight, tempo & instructions"
+                                onClick={() => toggleDetails(ex.key)}
+                              >
+                                <SlidersHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button type="button" size="icon" variant="ghost" onClick={() => removeExercise(day.key, ex.key)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </div>
+
+                            {detailsOpen && (
+                              <div className="grid grid-cols-3 gap-2 rounded-md bg-slate-50 p-2">
+                                <Input
+                                  className="h-8 bg-white text-xs"
+                                  placeholder="Weight (e.g. 20kg or RPE 8)"
+                                  value={ex.weightGuidance}
+                                  onChange={(e) => updateExercise(day.key, ex.key, { weightGuidance: e.target.value })}
+                                />
+                                <Input
+                                  className="h-8 bg-white text-xs"
+                                  placeholder="Tempo (e.g. 3-1-1)"
+                                  value={ex.tempo}
+                                  onChange={(e) => updateExercise(day.key, ex.key, { tempo: e.target.value })}
+                                />
+                                <Input
+                                  className="h-8 bg-white text-xs"
+                                  placeholder="Instructions / form cues"
+                                  value={ex.notes}
+                                  onChange={(e) => updateExercise(day.key, ex.key, { notes: e.target.value })}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                       <div className="flex gap-2">
                         <Button type="button" size="sm" variant="ghost" onClick={() => addExercise(day.key)}>
                           <Plus className="mr-1 h-3.5 w-3.5" /> Add Exercise
                         </Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => setAddExerciseOpen(true)}>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setAddExerciseForDay(day.key)}>
                           + New Exercise (library)
                         </Button>
                       </div>
@@ -316,7 +411,12 @@ export function CreateTrainingProgramDialog({
         </DialogContent>
       </Dialog>
 
-      <CreateExerciseDialog open={addExerciseOpen} onClose={() => setAddExerciseOpen(false)} />
+      <CreateExerciseDialog
+        open={addExerciseForDay !== null}
+        onClose={() => setAddExerciseForDay(null)}
+        onCreated={handleExerciseCreated}
+        libraryCatalog={libraryCatalog}
+      />
     </>
   )
 }

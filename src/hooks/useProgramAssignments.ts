@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   programAssignmentsApi,
   type CreateProgramAssignmentPayload,
+  type UpdateProgramAssignmentPayload,
   type CreateAssignmentLogPayload,
 } from '@/api/program-assignments.api'
 import { getApiErrorMessage } from '@/lib/api-error'
@@ -32,6 +33,22 @@ export function useCreateProgramAssignment() {
     },
     onError: (error: any) => {
       toast.error(getApiErrorMessage(error, 'Failed to assign training program'))
+    },
+  })
+}
+
+export function useUpdateProgramAssignment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateProgramAssignmentPayload }) =>
+      programAssignmentsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: programAssignmentKeys.all() })
+      toast.success('Assignment updated')
+    },
+    onError: (error: any) => {
+      toast.error(getApiErrorMessage(error, 'Failed to update assignment'))
     },
   })
 }

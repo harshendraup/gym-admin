@@ -1,0 +1,1209 @@
+{
+    "gym_workout_categories": [
+        {
+            "category_id": "cat_01",
+            "category_name": "Strength Training",
+            "description": "Absolute strength improvement, muscle building, and power lift exercises across free weights, selectorized machines, plate-loaded machines, and cable systems. Flagship strength floor houses 100+ individual pieces of equipment.",
+            "groups": [
+                {
+                    "group_id": "grp_str_01",
+                    "group_name": "Free Weights",
+                    "intensity": "High to Elite",
+                    "exercises": [
+                        {
+                            "name": "Barbell Back Squat",
+                            "target_muscle": "Quadriceps, Glutes, Hamstrings"
+                        },
+                        {
+                            "name": "Barbell Front Squat",
+                            "target_muscle": "Quadriceps, Core, Upper Back"
+                        },
+                        {
+                            "name": "Conventional Deadlift",
+                            "target_muscle": "Hamstrings, Glutes, Spinal Erectors, Traps"
+                        },
+                        {
+                            "name": "Sumo Deadlift",
+                            "target_muscle": "Adductors, Glutes, Hamstrings"
+                        },
+                        {
+                            "name": "Romanian Deadlift",
+                            "target_muscle": "Hamstrings, Glutes"
+                        },
+                        {
+                            "name": "Barbell Bench Press",
+                            "target_muscle": "Pectoralis Major, Anterior Deltoids, Triceps"
+                        },
+                        {
+                            "name": "Barbell Incline Bench Press",
+                            "target_muscle": "Upper Pectoralis, Anterior Deltoids"
+                        },
+                        {
+                            "name": "Overhead Barbell Press",
+                            "target_muscle": "Deltoids, Triceps, Core Stability"
+                        },
+                        {
+                            "name": "Barbell Bent-Over Row",
+                            "target_muscle": "Lats, Rhomboids, Rear Deltoids"
+                        },
+                        {
+                            "name": "Barbell Hip Thrust",
+                            "target_muscle": "Gluteus Maximus"
+                        },
+                        {
+                            "name": "Barbell Walking Lunge",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Dumbbell Incline Bicep Curl",
+                            "target_muscle": "Biceps Brachii"
+                        },
+                        {
+                            "name": "Dumbbell Lateral Raise",
+                            "target_muscle": "Lateral Deltoids"
+                        },
+                        {
+                            "name": "Dumbbell Flat Bench Press",
+                            "target_muscle": "Pectoralis Major"
+                        },
+                        {
+                            "name": "Dumbbell Bulgarian Split Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Olympic Barbell - Men's 20kg",
+                        "Olympic Barbell - Women's 15kg",
+                        "Technique/Training Barbell 10kg",
+                        "Trap/Hex Bar",
+                        "Safety Squat Bar",
+                        "Cambered Squat Bar",
+                        "Swiss (Football) Bar",
+                        "EZ Curl Bar",
+                        "Olympic Bumper Plates (Color-Coded kg)",
+                        "Olympic Iron Weight Plates (lb)",
+                        "Fractional Micro-Loading Plates (0.5-2.5kg)",
+                        "Rubber Hex Dumbbells (1kg-60kg Pairs)",
+                        "Adjustable Dumbbells (2.5-25kg)",
+                        "Adjustable FID Bench (Flat/Incline/Decline)",
+                        "Flat Utility Bench",
+                        "Adjustable Incline Bench",
+                        "Preacher Curl Bench",
+                        "Olympic Lifting Platform",
+                        "Weightlifting Belts",
+                        "Wrist Wraps",
+                        "Lifting Straps",
+                        "Chalk Block Station",
+                        "Spring Collars & Lock-Jaw Clips",
+                        "Dumbbell Storage Rack (3-Tier)",
+                        "Plate Storage Tree/Rack"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_02",
+                    "group_name": "Power Racks",
+                    "intensity": "High to Elite",
+                    "exercises": [
+                        {
+                            "name": "Rack Pull",
+                            "target_muscle": "Spinal Erectors, Traps, Glutes"
+                        },
+                        {
+                            "name": "Pin Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Band-Resisted Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Behind-the-Neck Press",
+                            "target_muscle": "Deltoids"
+                        },
+                        {
+                            "name": "Rack Chin-Up",
+                            "target_muscle": "Lats, Biceps"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Full Power Rack / Squat Cage",
+                        "Half Rack",
+                        "Combo Rack with Pull-Up Bar",
+                        "8-Person Multi-Station Power Rig",
+                        "Monolift",
+                        "Adjustable Squat Stands",
+                        "Wall-Mounted Folding Squat Rack",
+                        "Landmine Attachment",
+                        "Safety Spotter Arms",
+                        "J-Hooks & Safety Pins (Set)"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_03",
+                    "group_name": "Selectorized Machines",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "45-Degree Leg Press",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Seated Lat Pulldown",
+                            "target_muscle": "Latissimus Dorsi, Teres Major"
+                        },
+                        {
+                            "name": "Seated Chest Press Machine",
+                            "target_muscle": "Pectoralis Major"
+                        },
+                        {
+                            "name": "Lying Leg Curl Machine",
+                            "target_muscle": "Hamstrings Cluster"
+                        },
+                        {
+                            "name": "Seated Leg Extension Machine",
+                            "target_muscle": "Quadriceps Femoris"
+                        },
+                        {
+                            "name": "Pec Deck / Rear Delt Fly Machine",
+                            "target_muscle": "Pectoralis Major, Posterior Deltoids"
+                        },
+                        {
+                            "name": "Seated Cable Row",
+                            "target_muscle": "Rhomboids, Mid-Trapezius, Lats"
+                        },
+                        {
+                            "name": "Assisted Pull-Up/Dip Machine",
+                            "target_muscle": "Lats, Triceps"
+                        },
+                        {
+                            "name": "Seated Shoulder Press Machine",
+                            "target_muscle": "Deltoids"
+                        },
+                        {
+                            "name": "Preacher Curl Machine",
+                            "target_muscle": "Biceps Brachii"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Lat Pulldown Selectorized Tower",
+                        "Seated Chest Press Machine",
+                        "Lying Leg Curl Machine",
+                        "Seated Leg Extension Machine",
+                        "Pec Deck / Rear Delt Fly Machine",
+                        "Seated Cable Row Station",
+                        "Assisted Pull-Up/Dip Machine",
+                        "Seated Shoulder Press Machine",
+                        "Preacher Curl Machine",
+                        "Seated Dip Machine",
+                        "Vertical Traction Machine",
+                        "Torso Rotation Machine",
+                        "Abdominal Crunch Machine",
+                        "Back Extension Machine",
+                        "Multi-Hip Machine",
+                        "Hip Adductor Machine",
+                        "Hip Abductor Machine",
+                        "Glute Kickback Machine",
+                        "Standing Calf Raise Machine",
+                        "Seated Calf Raise Machine",
+                        "Bicep Curl Machine",
+                        "Triceps Extension Machine",
+                        "Shrug Machine"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_04",
+                    "group_name": "Plate-Loaded Machines",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Hack Squat",
+                            "target_muscle": "Quadriceps VMO"
+                        },
+                        {
+                            "name": "Iso-Lateral Chest Press",
+                            "target_muscle": "Pectoralis Major"
+                        },
+                        {
+                            "name": "Iso-Lateral Row",
+                            "target_muscle": "Lats, Rhomboids"
+                        },
+                        {
+                            "name": "Belt Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Pendulum Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Reverse Hyperextension",
+                            "target_muscle": "Glutes, Lower Back"
+                        },
+                        {
+                            "name": "V-Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Vertical Leg Press",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "T-Bar Row",
+                            "target_muscle": "Mid-Back, Lats"
+                        },
+                        {
+                            "name": "Smith Machine Shoulder Press",
+                            "target_muscle": "Anterior Deltoids"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Hack Squat Machine",
+                        "Iso-Lateral Chest Press Machine",
+                        "Iso-Lateral Row Machine",
+                        "Iso-Lateral Shoulder Press Machine",
+                        "Belt Squat Machine",
+                        "Pendulum Squat Machine",
+                        "Reverse Hyperextension Machine",
+                        "V-Squat Machine",
+                        "Vertical Leg Press Machine",
+                        "T-Bar Row Platform",
+                        "Glute Ham Developer (GHD)",
+                        "45-Degree Leg Press Machine",
+                        "Donkey Calf Raise Machine",
+                        "Smith Machine"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_05",
+                    "group_name": "Cable Systems",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Cable Crossover / Flyes",
+                            "target_muscle": "Sternal Head of Pectoralis Major"
+                        },
+                        {
+                            "name": "Triceps Rope Pushdown",
+                            "target_muscle": "Triceps Brachii (Lateral & Medial Heads)"
+                        },
+                        {
+                            "name": "Cable Woodchoppers",
+                            "target_muscle": "Obliques, Transverse Abdominis"
+                        },
+                        {
+                            "name": "Cable Face Pulls",
+                            "target_muscle": "Posterior Deltoids, Rotator Cuff, Upper Back"
+                        },
+                        {
+                            "name": "Single-Arm Cable Row",
+                            "target_muscle": "Lats, Rhomboids"
+                        },
+                        {
+                            "name": "Cable Kickback",
+                            "target_muscle": "Gluteus Maximus"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Functional Trainer / Dual Cable Crossover Machine",
+                        "Single-Column Cable Station",
+                        "Dual Adjustable Pulley Stack",
+                        "Lat Pulldown/Low Row Combo Station",
+                        "Triceps Rope Attachment",
+                        "D-Handles (Pair)",
+                        "Straight Bar Attachment",
+                        "EZ-Curl Cable Attachment",
+                        "Ankle Cuff Attachment",
+                        "V-Bar Attachment",
+                        "Cable Ladder Attachment"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_06",
+                    "group_name": "Kettlebell & Strongman",
+                    "intensity": "High to Elite",
+                    "exercises": [
+                        {
+                            "name": "Kettlebell Swing",
+                            "target_muscle": "Glutes, Hamstrings, Core"
+                        },
+                        {
+                            "name": "Kettlebell Turkish Get-Up",
+                            "target_muscle": "Full Body Stability"
+                        },
+                        {
+                            "name": "Farmer's Carry",
+                            "target_muscle": "Grip, Trapezius, Core"
+                        },
+                        {
+                            "name": "Sled Push",
+                            "target_muscle": "Quadriceps, Glutes, Full Body"
+                        },
+                        {
+                            "name": "Atlas Stone Lift",
+                            "target_muscle": "Posterior Chain, Grip"
+                        },
+                        {
+                            "name": "Tire Flip",
+                            "target_muscle": "Full Body Power"
+                        },
+                        {
+                            "name": "Yoke Carry",
+                            "target_muscle": "Full Body, Core Bracing"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Kettlebells (4kg-48kg Set)",
+                        "Competition Sandbags (10-50kg)",
+                        "Atlas Stones (Set of 5)",
+                        "Farmer's Walk Handles",
+                        "Weighted Sled (Prowler Push/Pull)",
+                        "Training Tire (Flip)",
+                        "Yoke Carry Frame",
+                        "Sledgehammer",
+                        "Steel Mace",
+                        "Clubbells (Set)",
+                        "Heavy Training Chains",
+                        "Log Press Bar"
+                    ]
+                },
+                {
+                    "group_id": "grp_str_07",
+                    "group_name": "Grip & Forearm",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Wrist Roller Curl",
+                            "target_muscle": "Forearm Flexors & Extensors"
+                        },
+                        {
+                            "name": "Plate Pinch Hold",
+                            "target_muscle": "Grip Strength"
+                        },
+                        {
+                            "name": "Farmer Hold (Static)",
+                            "target_muscle": "Grip, Trapezius"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Adjustable Grip Strengtheners",
+                        "Fat Gripz Bar Attachments",
+                        "Wrist Roller",
+                        "Forearm Curl Bench",
+                        "Hand Grip Trainer Set",
+                        "Adjustable-Strap Gymnastic Rings",
+                        "Ab Wheel Roller"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_02",
+            "category_name": "Cardio Conditioning",
+            "description": "Enhancing VO2 Max, burning calories, increasing stamina, and improving lung capacity across steady-state, HIIT, rowing, climbing, cycling-studio, and combat cardio equipment. Cardio floor houses 50+ individual machines.",
+            "groups": [
+                {
+                    "group_id": "grp_card_01",
+                    "group_name": "Steady-State Cardio",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Incline Treadmill Walking",
+                            "target_muscle": "Cardiovascular System, Calves, Glutes"
+                        },
+                        {
+                            "name": "Stationary Upright Cycling",
+                            "target_muscle": "Quadriceps, Cardiovascular System"
+                        },
+                        {
+                            "name": "Elliptical Gliding",
+                            "target_muscle": "Full Body Low-Impact Aerobic"
+                        },
+                        {
+                            "name": "Recumbent Cycling",
+                            "target_muscle": "Quadriceps, Hamstrings, Cardiovascular System"
+                        },
+                        {
+                            "name": "Arc Trainer Striding",
+                            "target_muscle": "Glutes, Quadriceps, Cardiovascular System"
+                        },
+                        {
+                            "name": "Recumbent Stepping",
+                            "target_muscle": "Glutes, Hamstrings, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Commercial Motorized Treadmill",
+                        "Upright Stationary Bike",
+                        "Recumbent Stationary Bike",
+                        "Elliptical Cross-Trainer",
+                        "Arc Trainer",
+                        "Recumbent Stepper",
+                        "Under-Desk Cycle Pedal Exerciser",
+                        "Seated Elliptical (Low-Impact Cross-Trainer)"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_02",
+                    "group_name": "HIIT & Air Bikes",
+                    "intensity": "High to Extreme",
+                    "exercises": [
+                        {
+                            "name": "Sprinting Intervals",
+                            "target_muscle": "Cardiovascular System, Fast-Twitch Muscle Fibers"
+                        },
+                        {
+                            "name": "Assault Air Bike Sprint",
+                            "target_muscle": "Full Body Exhaustion Conditioning"
+                        },
+                        {
+                            "name": "Echo Bike Intervals",
+                            "target_muscle": "Full Body Exhaustion Conditioning"
+                        },
+                        {
+                            "name": "Fan Bike Tabata",
+                            "target_muscle": "Full Body, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Slat-Belt Curved Manual Treadmill",
+                        "Assault AirBike",
+                        "Echo Bike",
+                        "Fan Bike (Dual-Action)",
+                        "Watt Bike",
+                        "Air-Resistance Rowing Bike Hybrid"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_03",
+                    "group_name": "Rowing & Skiing",
+                    "intensity": "High to Extreme",
+                    "exercises": [
+                        {
+                            "name": "Concept2 Rowing Ergometer Intervals",
+                            "target_muscle": "Posterior Chain, Core, Cardiovascular System"
+                        },
+                        {
+                            "name": "SkiErg Pulls",
+                            "target_muscle": "Lats, Core, Shoulders, Triceps, Heart"
+                        },
+                        {
+                            "name": "BikeErg Sprints",
+                            "target_muscle": "Quadriceps, Cardiovascular System"
+                        },
+                        {
+                            "name": "VersaClimber Ascents",
+                            "target_muscle": "Full Body Vertical Climbing"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Concept2 Rowing Machine (RowErg)",
+                        "Concept2 SkiErg Station",
+                        "Concept2 BikeErg",
+                        "VersaClimber",
+                        "Water Resistance Rowing Machine",
+                        "Magnetic Resistance Rowing Machine"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_04",
+                    "group_name": "Climbing & Stairs",
+                    "intensity": "High to Extreme",
+                    "exercises": [
+                        {
+                            "name": "Stair Climbing Intervals",
+                            "target_muscle": "Glutes, Hamstrings, Quadriceps, Heart"
+                        },
+                        {
+                            "name": "Jacob's Ladder Climb",
+                            "target_muscle": "Full Body, Cardiovascular System"
+                        },
+                        {
+                            "name": "Treadclimber Walking",
+                            "target_muscle": "Quadriceps, Glutes, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "StairMaster / Stepmill Machine",
+                        "Jacob's Ladder Climbing Machine",
+                        "Treadclimber",
+                        "Rotating Step Mill",
+                        "Vertical Climbing Wall Machine"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_05",
+                    "group_name": "Cycling Studio",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Spin Class Sprint Intervals",
+                            "target_muscle": "Quadriceps, Cardiovascular System"
+                        },
+                        {
+                            "name": "Group Cycling Endurance Ride",
+                            "target_muscle": "Quadriceps, Glutes, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Indoor Studio Spin Bike (20-Bike Studio Set)",
+                        "Smart Connected Spin Bike (Power Meter)",
+                        "Group Cycling Instructor Podium Bike",
+                        "Clip-In Cycling Shoe Rental Fleet"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_06",
+                    "group_name": "Jump Rope & Agility",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Speed Jump Rope Intervals",
+                            "target_muscle": "Calves, Cardiovascular System"
+                        },
+                        {
+                            "name": "Double-Under Conditioning",
+                            "target_muscle": "Calves, Shoulders, Cardiovascular System"
+                        },
+                        {
+                            "name": "Battle Rope Waves",
+                            "target_muscle": "Shoulders, Core, Cardiovascular System"
+                        },
+                        {
+                            "name": "Agility Ladder Drills",
+                            "target_muscle": "Calves, Coordination, Cardiovascular System"
+                        },
+                        {
+                            "name": "Shuttle Sprints",
+                            "target_muscle": "Full Body, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Speed Jump Ropes (Weighted & Standard)",
+                        "Battle Ropes (30ft/50ft)",
+                        "Battle Rope Wall Anchor",
+                        "Agility Ladder",
+                        "Speed & Agility Cones (Set)",
+                        "Plyometric Boxes (12in/18in/24in/30in)",
+                        "Adjustable Hurdles (Set)",
+                        "Sled Sprint Turf Lane",
+                        "Slam Balls (5-30kg Set)",
+                        "Wall Balls (6-20lb Set)",
+                        "Medicine Balls (2-12kg Set)"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_07",
+                    "group_name": "Accessible Cardio",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Seated Arm Ergometer Cranking",
+                            "target_muscle": "Shoulders, Arms, Cardiovascular System"
+                        },
+                        {
+                            "name": "Recumbent Cross Trainer Session",
+                            "target_muscle": "Full Body Low-Impact Aerobic"
+                        },
+                        {
+                            "name": "Aqua Jogging",
+                            "target_muscle": "Full Body Low-Impact, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Arm Ergometer (Upper Body Ergometer)",
+                        "Recumbent Cross Trainer (Seated Elliptical)",
+                        "Aqua Jogging Belt",
+                        "Underwater Treadmill (Aquatic Therapy Pool)",
+                        "Hand-Crank Cycle"
+                    ]
+                },
+                {
+                    "group_id": "grp_card_08",
+                    "group_name": "Boxing Cardio",
+                    "intensity": "High to Extreme",
+                    "exercises": [
+                        {
+                            "name": "Heavy Bag Rounds",
+                            "target_muscle": "Shoulders, Core, Cardiovascular System"
+                        },
+                        {
+                            "name": "Speed Bag Drills",
+                            "target_muscle": "Shoulders, Coordination, Cardiovascular System"
+                        },
+                        {
+                            "name": "Double-End Bag Striking",
+                            "target_muscle": "Shoulders, Reflexes, Cardiovascular System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Freestanding Heavy Bag",
+                        "Hanging Heavy Bag",
+                        "Speed Bag & Platform",
+                        "Double-End Bag",
+                        "Boxing Ring / Sparring Mat Area",
+                        "Focus Mitts & Thai Pads (Set)"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_03",
+            "category_name": "Flexibility & Mobility",
+            "description": "Dedicated recovery-adjacent zone for range-of-motion, myofascial release, assisted stretching, and restorative yoga — improving joint health, reducing injury risk, and speeding recovery between training sessions.",
+            "floor_space_sqft": 200,
+            "groups": [
+                {
+                    "group_id": "grp_flex_01",
+                    "group_name": "Static Stretching",
+                    "intensity": "Low",
+                    "exercises": [
+                        {
+                            "name": "Standing Hamstring Stretch",
+                            "target_muscle": "Hamstrings"
+                        },
+                        {
+                            "name": "Seated Forward Fold",
+                            "target_muscle": "Hamstrings, Lower Back"
+                        },
+                        {
+                            "name": "Pigeon Pose Hip Stretch",
+                            "target_muscle": "Hip Flexors, Glutes"
+                        },
+                        {
+                            "name": "Butterfly Groin Stretch",
+                            "target_muscle": "Adductors"
+                        },
+                        {
+                            "name": "Wall Lat Stretch",
+                            "target_muscle": "Latissimus Dorsi, Shoulders"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Premium Stretching Mats (6x4ft)",
+                        "Yoga Blocks (Set)",
+                        "Yoga Straps",
+                        "Multi-Loop Stretch Out Strap",
+                        "PVC Mobility Pipes"
+                    ]
+                },
+                {
+                    "group_id": "grp_flex_02",
+                    "group_name": "Myofascial Release",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Foam Rolling IT Band",
+                            "target_muscle": "Iliotibial Band"
+                        },
+                        {
+                            "name": "Lacrosse Ball Glute Release",
+                            "target_muscle": "Gluteal Muscles"
+                        },
+                        {
+                            "name": "Vibrating Roller Quad Release",
+                            "target_muscle": "Quadriceps"
+                        },
+                        {
+                            "name": "Peanut Ball Thoracic Release",
+                            "target_muscle": "Thoracic Spine, Upper Back"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Standard Density Foam Rollers",
+                        "Vibrating Foam Rollers",
+                        "Textured/Ridged Foam Rollers",
+                        "Lacrosse Balls (Set)",
+                        "Peanut-Shaped Massage Balls",
+                        "Massage Stick Rollers",
+                        "Percussion Massage Gun Station"
+                    ]
+                },
+                {
+                    "group_id": "grp_flex_03",
+                    "group_name": "Assisted Stretching",
+                    "intensity": "Medium",
+                    "exercises": [
+                        {
+                            "name": "Assisted Hamstring Stretch (Machine)",
+                            "target_muscle": "Hamstrings"
+                        },
+                        {
+                            "name": "Assisted Hip Flexor Stretch",
+                            "target_muscle": "Hip Flexors, Psoas"
+                        },
+                        {
+                            "name": "Assisted Split Progression",
+                            "target_muscle": "Hamstrings, Adductors, Hip Flexors"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Assisted Stretch Training Table",
+                        "Stretch Cage / Multi-Angle Stretch Trainer",
+                        "Inversion Table",
+                        "Leg Stretcher Machine (Split Trainer)",
+                        "Adjustable Stretching Rack"
+                    ]
+                },
+                {
+                    "group_id": "grp_flex_04",
+                    "group_name": "Dynamic Mobility",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Hip CARs (Controlled Articular Rotations)",
+                            "target_muscle": "Hip Joint Capsule"
+                        },
+                        {
+                            "name": "World's Greatest Stretch Flow",
+                            "target_muscle": "Full Body Mobility"
+                        },
+                        {
+                            "name": "Band-Resisted Shoulder Dislocates",
+                            "target_muscle": "Shoulder Capsule, Rotator Cuff"
+                        },
+                        {
+                            "name": "Ankle Mobility Rocks",
+                            "target_muscle": "Ankle Joint, Calves"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Mobility Resistance Bands (Light-Heavy Set)",
+                        "Mini Loop Bands (Set)",
+                        "Mobility Discs (Rotational)",
+                        "Wobble Board",
+                        "Slant Board (Calf/Ankle Mobility)",
+                        "Balance Pad"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_10",
+            "category_name": "Yoga",
+            "description": "Dedicated yoga studio zone spanning restorative, flow-based, and power yoga practice for flexibility, balance, breathwork, and mindful movement.",
+            "groups": [
+                {
+                    "group_id": "grp_yoga_01",
+                    "group_name": "Yoga Studio",
+                    "intensity": "Low",
+                    "exercises": [
+                        {
+                            "name": "Sun Salutation Flow",
+                            "target_muscle": "Full Body Mobility"
+                        },
+                        {
+                            "name": "Restorative Yin Yoga Hold",
+                            "target_muscle": "Connective Tissue, Joints"
+                        },
+                        {
+                            "name": "Guided Breathwork Session",
+                            "target_muscle": "Diaphragm, Nervous System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Yoga Mats (Studio Set)",
+                        "Yoga Bolsters",
+                        "Meditation Cushions",
+                        "Aromatherapy Diffuser (Studio Ambience)",
+                        "Studio Sound System"
+                    ]
+                },
+                {
+                    "group_id": "grp_yoga_02",
+                    "group_name": "Power Yoga",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Vinyasa Flow Sequence",
+                            "target_muscle": "Full Body Mobility"
+                        },
+                        {
+                            "name": "Warrior II Pose Hold",
+                            "target_muscle": "Quadriceps, Glutes, Deltoids"
+                        },
+                        {
+                            "name": "Chair Pose Hold",
+                            "target_muscle": "Quadriceps, Glutes, Core"
+                        },
+                        {
+                            "name": "Crow Pose Balance",
+                            "target_muscle": "Core, Wrist Flexors, Balance"
+                        },
+                        {
+                            "name": "Downward Dog to Plank Flow",
+                            "target_muscle": "Deltoids, Core, Hamstrings"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Non-Slip Yoga Mats",
+                        "Cork Yoga Mats",
+                        "Yoga Blocks (Set)",
+                        "Yoga Wheel",
+                        "Sweat-Grip Yoga Towel",
+                        "Hot Yoga Studio Heater"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_04",
+            "category_name": "Functional Training",
+            "description": "Multi-joint, movement-pattern-based training combining bodyweight calisthenics, loaded carries, and explosive plyometrics on turf and rig space.",
+            "groups": [
+                {
+                    "group_id": "grp_func_01",
+                    "group_name": "Rig & Calisthenics",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Strict Pull-Up",
+                            "target_muscle": "Lats, Biceps"
+                        },
+                        {
+                            "name": "Kipping Pull-Up",
+                            "target_muscle": "Lats, Shoulders, Core"
+                        },
+                        {
+                            "name": "Muscle-Up",
+                            "target_muscle": "Lats, Chest, Triceps, Core"
+                        },
+                        {
+                            "name": "Ring Dip",
+                            "target_muscle": "Triceps, Chest, Shoulder Stability"
+                        },
+                        {
+                            "name": "Toes-to-Bar",
+                            "target_muscle": "Abdominals, Hip Flexors, Grip"
+                        },
+                        {
+                            "name": "Handstand Push-Up",
+                            "target_muscle": "Deltoids, Triceps, Core"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Wall-Mounted Pull-Up/Dip Rig",
+                        "Freestanding Cross-Training Rig",
+                        "Gymnastic Rings",
+                        "Parallettes",
+                        "Suspension Trainer (Adjustable Straps)",
+                        "Push-Up Handles",
+                        "Plyo Push-Up Blocks"
+                    ]
+                },
+                {
+                    "group_id": "grp_func_02",
+                    "group_name": "Sleds & Carries",
+                    "intensity": "High",
+                    "exercises": [
+                        {
+                            "name": "Sled Drag (Backward/Forward)",
+                            "target_muscle": "Quadriceps, Glutes, Hamstrings"
+                        },
+                        {
+                            "name": "Bear Crawl",
+                            "target_muscle": "Full Body, Core Stability"
+                        },
+                        {
+                            "name": "Sandbag Carry",
+                            "target_muscle": "Core, Traps, Grip"
+                        },
+                        {
+                            "name": "Overhead Carry",
+                            "target_muscle": "Shoulders, Core, Stability"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Weighted Vest (5-40kg)",
+                        "Ankle & Wrist Weights",
+                        "Sandbag Training Kit",
+                        "Trap Bar Farmer Carry Handles"
+                    ]
+                },
+                {
+                    "group_id": "grp_func_03",
+                    "group_name": "Plyometric Power",
+                    "intensity": "High to Elite",
+                    "exercises": [
+                        {
+                            "name": "Box Jump",
+                            "target_muscle": "Quadriceps, Glutes, Calves"
+                        },
+                        {
+                            "name": "Depth Jump",
+                            "target_muscle": "Quadriceps, Glutes, Reactive Strength"
+                        },
+                        {
+                            "name": "Broad Jump",
+                            "target_muscle": "Glutes, Quadriceps, Explosive Power"
+                        },
+                        {
+                            "name": "Medicine Ball Slam",
+                            "target_muscle": "Core, Shoulders, Lats"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Soft Plyo Boxes (Foam)",
+                        "Wooden 3-in-1 Plyo Box",
+                        "Vertical Jump Trainer (Vertec-Style)",
+                        "Reactive Agility Trainer"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_05",
+            "category_name": "Olympic Lifting",
+            "description": "Dedicated competition-standard platform zone for the snatch, clean & jerk, squat, bench, and deadlift disciplines.",
+            "groups": [
+                {
+                    "group_id": "grp_oly_01",
+                    "group_name": "Competition Lifts",
+                    "intensity": "Elite",
+                    "exercises": [
+                        {
+                            "name": "Snatch",
+                            "target_muscle": "Full Body Triple Extension"
+                        },
+                        {
+                            "name": "Clean and Jerk",
+                            "target_muscle": "Full Body Triple Extension"
+                        },
+                        {
+                            "name": "Power Clean",
+                            "target_muscle": "Traps, Glutes, Quadriceps"
+                        },
+                        {
+                            "name": "Push Press",
+                            "target_muscle": "Deltoids, Triceps, Legs"
+                        },
+                        {
+                            "name": "Clean Pull",
+                            "target_muscle": "Traps, Spinal Erectors, Glutes"
+                        },
+                        {
+                            "name": "Snatch-Grip Deadlift",
+                            "target_muscle": "Hamstrings, Traps, Upper Back"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Competition Olympic Lifting Platform",
+                        "IWF-Certified Competition Bumper Plates",
+                        "Competition Barbell (Men's/Women's)",
+                        "Adjustable Lifting Blocks",
+                        "Powerlifting Monolift",
+                        "IPF-Approved Squat Rack",
+                        "Deadlift Jack"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_06",
+            "category_name": "Core & Balance",
+            "description": "Targeted midline strengthening and proprioceptive training to build injury-resilient athletes and improve everyday movement control.",
+            "groups": [
+                {
+                    "group_id": "grp_core_01",
+                    "group_name": "Core Machines",
+                    "intensity": "Medium",
+                    "exercises": [
+                        {
+                            "name": "Cable Crunch",
+                            "target_muscle": "Rectus Abdominis"
+                        },
+                        {
+                            "name": "Hanging Leg Raise",
+                            "target_muscle": "Lower Abdominals, Hip Flexors"
+                        },
+                        {
+                            "name": "Ab Coaster Crunch",
+                            "target_muscle": "Rectus Abdominis, Obliques"
+                        },
+                        {
+                            "name": "Russian Twist",
+                            "target_muscle": "Obliques, Transverse Abdominis"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Ab Coaster Machine",
+                        "Vertical Knee Raise / Captain's Chair Station",
+                        "Roman Chair",
+                        "Decline Ab Bench",
+                        "Weighted Ab Roller Wheel"
+                    ]
+                },
+                {
+                    "group_id": "grp_core_02",
+                    "group_name": "Balance Training",
+                    "intensity": "Low to Medium",
+                    "exercises": [
+                        {
+                            "name": "Single-Leg BOSU Balance Hold",
+                            "target_muscle": "Ankle Stabilizers, Core"
+                        },
+                        {
+                            "name": "Stability Ball Plank",
+                            "target_muscle": "Core, Shoulder Stability"
+                        },
+                        {
+                            "name": "Balance Beam Walk",
+                            "target_muscle": "Ankle Stabilizers, Coordination"
+                        }
+                    ],
+                    "related_equipments": [
+                        "BOSU Balance Trainer",
+                        "Stability/Swiss Balls (45-75cm Set)",
+                        "Balance Beam",
+                        "Wobble Cushion",
+                        "Rocker Board",
+                        "Vestibular Balance Disc"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_07",
+            "category_name": "Group Fitness",
+            "description": "Instructor-led studio programming space for barbell circuits, dance cardio, bootcamp HIIT, and reformer Pilates.",
+            "groups": [
+                {
+                    "group_id": "grp_studio_01",
+                    "group_name": "Studio Equipment",
+                    "intensity": "Medium to High",
+                    "exercises": [
+                        {
+                            "name": "Body Pump Barbell Circuit",
+                            "target_muscle": "Full Body Endurance"
+                        },
+                        {
+                            "name": "Zumba Dance Cardio",
+                            "target_muscle": "Full Body, Cardiovascular System"
+                        },
+                        {
+                            "name": "HIIT Bootcamp Circuit",
+                            "target_muscle": "Full Body, Cardiovascular System"
+                        },
+                        {
+                            "name": "Pilates Reformer Flow",
+                            "target_muscle": "Core, Postural Muscles"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Studio Barbell Set (Lightweight, Loadable)",
+                        "Adjustable Step Platforms",
+                        "Pilates Reformer Machines",
+                        "Pilates Cadillac/Trapeze Table",
+                        "Resistance Tubes with Handles",
+                        "Wall-to-Wall Studio Mirrors",
+                        "Studio Sound System & Microphone",
+                        "Aerial Yoga Hammocks"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_08",
+            "category_name": "Recovery & Wellness",
+            "description": "Post-training recovery suite covering thermal therapy, percussion and compression modalities, and soft-tissue treatment.",
+            "groups": [
+                {
+                    "group_id": "grp_recovery_01",
+                    "group_name": "Thermal Therapy",
+                    "intensity": "Low",
+                    "exercises": [
+                        {
+                            "name": "Infrared Sauna Session",
+                            "target_muscle": "Full Body Circulation, Detoxification"
+                        },
+                        {
+                            "name": "Cold Plunge Immersion",
+                            "target_muscle": "Full Body Inflammation Reduction"
+                        },
+                        {
+                            "name": "Contrast Water Therapy",
+                            "target_muscle": "Full Body Circulation"
+                        },
+                        {
+                            "name": "Steam Room Recovery",
+                            "target_muscle": "Full Body Circulation, Respiratory System"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Traditional Sauna",
+                        "Infrared Sauna",
+                        "Steam Room",
+                        "Cold Plunge Tub",
+                        "Contrast Therapy Tub System"
+                    ]
+                },
+                {
+                    "group_id": "grp_recovery_02",
+                    "group_name": "Percussion & Compression",
+                    "intensity": "Low",
+                    "exercises": [
+                        {
+                            "name": "Percussion Massage Gun Therapy",
+                            "target_muscle": "Targeted Muscle Groups"
+                        },
+                        {
+                            "name": "Pneumatic Compression Boot Session",
+                            "target_muscle": "Legs, Lymphatic System"
+                        },
+                        {
+                            "name": "Red Light Therapy Panel Session",
+                            "target_muscle": "Full Body Cellular Recovery"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Percussion Massage Gun Station",
+                        "Pneumatic Compression Boot System",
+                        "Red Light / Photobiomodulation Therapy Panel",
+                        "Massage Therapy Table",
+                        "Compression Massage Chair",
+                        "Cupping Therapy Set"
+                    ]
+                }
+            ]
+        },
+        {
+            "category_id": "cat_09",
+            "category_name": "Senior & Rehab",
+            "description": "Low-impact, joint-friendly equipment for older adults, post-injury rehabilitation, and preventative movement therapy under supervision.",
+            "groups": [
+                {
+                    "group_id": "grp_rehab_01",
+                    "group_name": "Rehab Equipment",
+                    "intensity": "Low",
+                    "exercises": [
+                        {
+                            "name": "Seated Resistance Band Row",
+                            "target_muscle": "Rhomboids, Rear Deltoids"
+                        },
+                        {
+                            "name": "Chair-Assisted Squat",
+                            "target_muscle": "Quadriceps, Glutes"
+                        },
+                        {
+                            "name": "Balance Bar Walking",
+                            "target_muscle": "Ankle Stabilizers, Coordination"
+                        },
+                        {
+                            "name": "Light Cable Shoulder Rehab",
+                            "target_muscle": "Rotator Cuff, Deltoids"
+                        }
+                    ],
+                    "related_equipments": [
+                        "Seated Leg Press (Low-Resistance Rehab)",
+                        "Recumbent Rehab Cycle",
+                        "Parallel Balance Bars",
+                        "Adjustable Cable Pulley (Rehab, Low-Weight)",
+                        "Therapy Resistance Bands (Color-Graded)",
+                        "Wall-Mounted Handrails",
+                        "Rehab-Grade Physio Balls",
+                        "Non-Slip Rehab Step Platform"
+                    ]
+                }
+            ]
+        }
+    ]
+}

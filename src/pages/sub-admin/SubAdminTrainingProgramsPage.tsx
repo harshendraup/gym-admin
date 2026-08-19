@@ -1,27 +1,30 @@
-import { useState } from 'react'
-import { Plus, Dumbbell, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Dumbbell, Trash2, Check } from 'lucide-react'
 import { AssignTrainingProgramDialog } from '@/components/entity/AssignTrainingProgramDialog'
 import { CreateTrainingProgramDialog } from '@/components/entity/CreateTrainingProgramDialog'
 import { CreateExerciseDialog } from '@/components/entity/CreateExerciseDialog'
-import { useProgramAssignments, useDeleteProgramAssignment } from '@/hooks/useProgramAssignments'
+import { ExerciseLibrarySetupPrompt } from '@/components/entity/ExerciseLibrarySetupPrompt'
+import { ConfigureExerciseLibraryDialog } from '@/components/entity/ConfigureExerciseLibraryDialog'
+import { ViewExerciseLibraryDialog } from '@/components/entity/ViewExerciseLibraryDialog'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select'
+import { useProgramAssignments, useDeleteProgramAssignment, useUpdateProgramAssignment } from '@/hooks/useProgramAssignments'
 import { useTrainingPrograms, useDeleteTrainingProgram } from '@/hooks/useTrainingPrograms'
 import { useExercises, useDeleteExercise } from '@/hooks/useExercises'
+import { useExerciseLibraryConfig, useDeleteExerciseLibraryConfig } from '@/hooks/useExerciseLibraryConfig'
 import { useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
 import { useAuthStore } from '@/store/auth.store'
 import type { ProgramAssignmentStatus } from '@/api/program-assignments.api'
 import type { ManagedUser } from '@/api/user-management.api'
 import { T, mono } from '@/components/scoreboard/tokens'
-import { Hero, ScoreCard, ScoreboardCta, ScoreboardIconButton, RowCardList, RowCard, StatusPill } from '@/components/scoreboard/primitives'
+import { Hero, ScoreCard, ScoreboardCta, ScoreboardIconButton, RowCardList, RowCard } from '@/components/scoreboard/primitives'
 
 const HERO_IMAGE: string | null = null
 
-const statusTone: Record<ProgramAssignmentStatus, 'forest' | 'amber' | 'signal'> = {
-  active: 'forest',
-  paused: 'amber',
-  completed: 'forest',
-  cancelled: 'signal',
-}
+const STATUSES: ProgramAssignmentStatus[] = ['active', 'paused', 'completed', 'cancelled']
 
 function findUser(users: ManagedUser[], id: number | null) {
   if (!id) return undefined
@@ -29,9 +32,9 @@ function findUser(users: ManagedUser[], id: number | null) {
 }
 
 const SECTIONS = [
-  { key: 'assignments', label: 'Assignments' },
-  { key: 'programs', label: 'Programs' },
   { key: 'exercises', label: 'Exercise Library' },
+  { key: 'programs', label: 'Programs' },
+  { key: 'assignments', label: 'Assigned Programs' },
 ] as const
 
 export default function SubAdminTrainingProgramsPage() {
@@ -43,15 +46,21 @@ export default function SubAdminTrainingProgramsPage() {
   const assignments = useProgramAssignments()
   const programs = useTrainingPrograms()
   const exercises = useExercises()
+  const libraryConfig = useExerciseLibraryConfig()
 
   const deleteAssignment = useDeleteProgramAssignment()
+  const updateAssignment = useUpdateProgramAssignment()
   const deleteProgram = useDeleteTrainingProgram()
   const deleteExercise = useDeleteExercise()
+  const deleteLibrary = useDeleteExerciseLibraryConfig()
 
-  const [section, setSection] = useState<(typeof SECTIONS)[number]['key']>('assignments')
+  const [section, setSection] = useState<(typeof SECTIONS)[number]['key']>('exercises')
   const [assignOpen, setAssignOpen] = useState(false)
   const [createProgramOpen, setCreateProgramOpen] = useState(false)
   const [createExerciseOpen, setCreateExerciseOpen] = useState(false)
+  const [configureLibraryOpen, setConfigureLibraryOpen] = useState(false)
+  const [viewLibraryOpen, setViewLibraryOpen] = useState(false)
+  const [exerciseSearch, setExerciseSearch] = useState('')
 
   const memberName = (id: number) => {
     const u = findUser(members, id)
@@ -62,11 +71,28 @@ export default function SubAdminTrainingProgramsPage() {
     const u = findUser(trainers, id)
     return u ? (u.fullName ?? u.firstName) : `#${id}`
   }
-  const programName = (id: number) => programs.data?.find((p) => p.id === id)?.name ?? `#${id}`
+  // training_programs.id comes back over the wire as a string (Postgres
+  // bigint serialization) despite the TrainingProgramRecord type saying
+  // number — same reason findUser above coerces id to a string.
+  const programName = (id: number) => programs.data?.find((p) => String(p.id) === String(id))?.name ?? `#${id}`
 
   const deletingAssignmentId = deleteAssignment.isPending ? (deleteAssignment.variables ?? null) : null
   const deletingProgramId = deleteProgram.isPending ? (deleteProgram.variables ?? null) : null
   const deletingExerciseId = deleteExercise.isPending ? (deleteExercise.variables ?? null) : null
+
+  const stepDone: Record<(typeof SECTIONS)[number]['key'], boolean> = {
+    exercises: !!libraryConfig.data,
+    programs: (programs.data?.length ?? 0) > 0,
+    assignments: (assignments.data?.length ?? 0) > 0,
+  }
+
+  const filteredExercises = useMemo(() => {
+    const q = exerciseSearch.trim().toLowerCase()
+    if (!q) return exercises.data
+    return exercises.data?.filter(
+      (e) => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || e.muscleGroup?.toLowerCase().includes(q)
+    )
+  }, [exercises.data, exerciseSearch])
 
   return (
     <>
@@ -79,12 +105,15 @@ export default function SubAdminTrainingProgramsPage() {
       />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {SECTIONS.map((s) => (
+        {SECTIONS.filter((s) => s.key === 'exercises' || !!libraryConfig.data).map((s, i) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
             style={{
               ...mono,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.04em',
@@ -97,18 +126,34 @@ export default function SubAdminTrainingProgramsPage() {
               cursor: 'pointer',
             }}
           >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 16,
+                width: 16,
+                borderRadius: 999,
+                fontSize: 10,
+                background: stepDone[s.key] ? (section === s.key ? '#fff' : T.signal) : 'transparent',
+                color: stepDone[s.key] ? (section === s.key ? T.signal : '#fff') : 'inherit',
+                border: stepDone[s.key] ? 'none' : `1px solid ${section === s.key ? '#fff' : T.line}`,
+              }}
+            >
+              {stepDone[s.key] ? <Check size={10} /> : i + 1}
+            </span>
             {s.label}
           </button>
         ))}
       </div>
 
-      {section === 'assignments' && (
+      {section === 'assignments' && libraryConfig.data && (
         <ScoreCard
-          title={`Assignments · ${assignments.data?.length ?? 0}`}
-          subtitle="Training programs assigned to members in your branch"
+          title={`Assigned Programs · ${assignments.data?.length ?? 0}`}
+          subtitle="Which members are currently following a training program, and since when"
           action={
             <ScoreboardCta icon={Plus} onClick={() => setAssignOpen(true)}>
-              Assign Program
+              Assign to a Member
             </ScoreboardCta>
           }
         >
@@ -117,10 +162,10 @@ export default function SubAdminTrainingProgramsPage() {
             isError={assignments.isError}
             onRetry={assignments.refetch}
             isEmpty={!assignments.isLoading && !assignments.isError && (assignments.data?.length ?? 0) === 0}
-            emptyMessage="No programs assigned yet."
+            emptyMessage="No members are on a program yet — assign your first training program."
           >
             {assignments.data?.map((a) => (
-              <RowCard key={a.id} columns="1.4fr 1.1fr 1.1fr 0.9fr 0.9fr auto">
+              <RowCard key={a.id} columns="1.3fr 1fr 1fr 0.8fr 0.8fr 0.9fr auto">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,70,32,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Dumbbell size={18} color={T.signal} />
@@ -135,8 +180,20 @@ export default function SubAdminTrainingProgramsPage() {
                   <span style={{ ...mono, fontSize: 9.5, color: T.dim, display: 'block', letterSpacing: '0.06em' }}>TRAINER</span>
                   {trainerName(a.trainerId)}
                 </div>
-                <div style={{ ...mono, fontSize: 12, color: T.text }}>{a.startDate.slice(0, 10)}</div>
-                <StatusPill tone={statusTone[a.status]}>{a.status}</StatusPill>
+                <div>
+                  <span style={{ ...mono, fontSize: 9.5, color: T.dim, display: 'block', letterSpacing: '0.06em' }}>START</span>
+                  <span style={{ ...mono, fontSize: 12, color: T.text }}>{a.startDate.slice(0, 10)}</span>
+                </div>
+                <div>
+                  <span style={{ ...mono, fontSize: 9.5, color: T.dim, display: 'block', letterSpacing: '0.06em' }}>END</span>
+                  <span style={{ ...mono, fontSize: 12, color: T.text }}>{a.endDate?.slice(0, 10) ?? '—'}</span>
+                </div>
+                <Select value={a.status} onValueChange={(v) => updateAssignment.mutate({ id: a.id, data: { status: v as ProgramAssignmentStatus } })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <ScoreboardIconButton icon={Trash2} label="Remove" onClick={() => deleteAssignment.mutate(a.id)} disabled={deletingAssignmentId === a.id} />
               </RowCard>
             ))}
@@ -144,10 +201,10 @@ export default function SubAdminTrainingProgramsPage() {
         </ScoreCard>
       )}
 
-      {section === 'programs' && (
+      {section === 'programs' && libraryConfig.data && (
         <ScoreCard
           title={`Programs · ${programs.data?.length ?? 0}`}
-          subtitle="Training program templates in your branch"
+          subtitle="Reusable workout templates for your branch — build one here, then assign it to members from Assigned Programs"
           action={
             <ScoreboardCta icon={Plus} onClick={() => setCreateProgramOpen(true)}>
               Create Program
@@ -159,7 +216,7 @@ export default function SubAdminTrainingProgramsPage() {
             isError={programs.isError}
             onRetry={programs.refetch}
             isEmpty={!programs.isLoading && !programs.isError && (programs.data?.length ?? 0) === 0}
-            emptyMessage="No training programs yet. Create the first one."
+            emptyMessage="No training programs yet — create one to start building workouts for your members."
           >
             {programs.data?.map((p) => (
               <RowCard key={p.id} columns="1.6fr 1fr 1fr 0.8fr auto">
@@ -174,24 +231,68 @@ export default function SubAdminTrainingProgramsPage() {
         </ScoreCard>
       )}
 
-      {section === 'exercises' && (
+      {section === 'exercises' && !libraryConfig.isLoading && !libraryConfig.data && (
+        <ScoreCard title="Exercise Library" subtitle="Every exercise your branch has added">
+          <ExerciseLibrarySetupPrompt onConfigure={() => setConfigureLibraryOpen(true)} />
+        </ScoreCard>
+      )}
+
+      {section === 'exercises' && (libraryConfig.isLoading || libraryConfig.data) && (
         <ScoreCard
           title={`Exercise Library · ${exercises.data?.length ?? 0}`}
-          subtitle="Reusable exercises available to every program"
+          subtitle={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span>Every exercise your branch has added — pick from these when building a program</span>
+              <button
+                onClick={() => setViewLibraryOpen(true)}
+                style={{ ...mono, fontSize: 10.5, color: T.dim, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                View Library
+              </button>
+              <button
+                onClick={() => setConfigureLibraryOpen(true)}
+                style={{ ...mono, fontSize: 10.5, color: T.dim, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Edit Setup
+              </button>
+              {import.meta.env.DEV && (
+                <button
+                  disabled={deleteLibrary.isPending}
+                  title="Dev-only: wipes the exercise library setup for testing"
+                  onClick={() => {
+                    if (window.confirm('[Dev only] Permanently delete this gym\'s exercise library setup? This does not delete any exercises already added.')) {
+                      deleteLibrary.mutate()
+                    }
+                  }}
+                  style={{ ...mono, fontSize: 10.5, color: T.signal, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Delete Library (dev)
+                </button>
+              )}
+            </span>
+          }
           action={
             <ScoreboardCta icon={Plus} onClick={() => setCreateExerciseOpen(true)}>
               Add Exercise
             </ScoreboardCta>
           }
         >
+          <div style={{ marginBottom: 12, maxWidth: 280 }}>
+            <Input
+              placeholder="Search exercises..."
+              value={exerciseSearch}
+              onChange={(e) => setExerciseSearch(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
           <RowCardList
-            isLoading={exercises.isLoading}
+            isLoading={exercises.isLoading || libraryConfig.isLoading}
             isError={exercises.isError}
             onRetry={exercises.refetch}
-            isEmpty={!exercises.isLoading && !exercises.isError && (exercises.data?.length ?? 0) === 0}
-            emptyMessage="No exercises yet. Add the first one."
+            isEmpty={!exercises.isLoading && !exercises.isError && (filteredExercises?.length ?? 0) === 0}
+            emptyMessage={exerciseSearch ? 'No exercises match your search.' : 'No exercises yet — click "Add Exercise" to create your first one.'}
           >
-            {exercises.data?.map((e) => (
+            {filteredExercises?.map((e) => (
               <RowCard key={e.id} columns="1.4fr 1fr 1fr 0.8fr auto">
                 <div style={{ fontWeight: 700, fontSize: 14.5, color: T.text }}>{e.name}</div>
                 <div style={{ fontSize: 13.5, color: T.dim }}>{e.category}</div>
@@ -216,9 +317,30 @@ export default function SubAdminTrainingProgramsPage() {
         open={createProgramOpen}
         onClose={() => setCreateProgramOpen(false)}
         fixedBranchId={gymContext?.branchId ? Number(gymContext.branchId) : undefined}
+        libraryCatalog={libraryConfig.data?.config.categories}
       />
 
-      <CreateExerciseDialog open={createExerciseOpen} onClose={() => setCreateExerciseOpen(false)} />
+      <CreateExerciseDialog
+        open={createExerciseOpen}
+        onClose={() => setCreateExerciseOpen(false)}
+        libraryCatalog={libraryConfig.data?.config.categories}
+      />
+
+      <ConfigureExerciseLibraryDialog
+        open={configureLibraryOpen}
+        onClose={() => setConfigureLibraryOpen(false)}
+        existingConfig={libraryConfig.data}
+      />
+
+      <ViewExerciseLibraryDialog
+        open={viewLibraryOpen}
+        onClose={() => setViewLibraryOpen(false)}
+        config={libraryConfig.data}
+        onEdit={() => {
+          setViewLibraryOpen(false)
+          setConfigureLibraryOpen(true)
+        }}
+      />
     </>
   )
 }

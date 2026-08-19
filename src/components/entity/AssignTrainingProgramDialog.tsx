@@ -97,8 +97,11 @@ export function AssignTrainingProgramDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Assign Training Program</DialogTitle>
+          <DialogTitle>Assign a Training Program</DialogTitle>
         </DialogHeader>
+        <p className="-mt-2 text-sm text-muted-foreground">
+          Put an existing training program onto one member's schedule, starting on the date you choose.
+        </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {!fixedMember && (
             <div className="space-y-1.5">
@@ -173,7 +176,7 @@ export function AssignTrainingProgramDialog({
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? 'Assigning...' : 'Assign Program'}
+              {create.isPending ? 'Assigning...' : 'Assign to Member'}
             </Button>
           </DialogFooter>
         </form>
