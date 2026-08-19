@@ -12,9 +12,9 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
-import { useCreateDiet } from '@/hooks/useDiets'
+import { useCreateDiet, useUpdateDiet } from '@/hooks/useDiets'
 import type { ManagedUser } from '@/api/user-management.api'
-import type { DietGoal, DietStatus } from '@/api/diets.api'
+import type { DietGoal, DietStatus, DietRecord } from '@/api/diets.api'
 
 const GOALS: DietGoal[] = ['Weight Loss', 'Muscle Gain', 'Fat Loss', 'Fitness']
 const STATUSES: DietStatus[] = ['Draft', 'Active', 'Completed']
@@ -44,13 +44,15 @@ interface CreateDietDialogProps {
   trainerOptions: ManagedUser[]
   /** Preselects and locks the member (e.g. opened from a member's own detail page). */
   fixedMember?: ManagedUser
+  /** When set, the dialog edits this plan instead of creating a new one. */
+  diet?: DietRecord | null
 }
 
 /**
- * Creates a diet plan for a specific member. businessId/branchId are never
- * sent — the backend derives both from the chosen client, and the trainer
- * picker here is narrowed to that same branch so the request can't fail on
- * the server's trainer/client mismatch check.
+ * Creates (or edits) a diet plan for a specific member. businessId/branchId
+ * are never sent — the backend derives both from the chosen client, and the
+ * trainer picker here is narrowed to that same branch so the request can't
+ * fail on the server's trainer/client mismatch check.
  */
 export function CreateDietDialog({
   open,
@@ -58,36 +60,41 @@ export function CreateDietDialog({
   memberOptions,
   trainerOptions,
   fixedMember,
+  diet,
 }: CreateDietDialogProps) {
   const [clientId, setClientId] = useState('')
   const [trainerId, setTrainerId] = useState('')
+  const isEdit = !!diet
   const create = useCreateDiet()
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
+  const update = useUpdateDiet(diet?.id ?? 0)
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   })
+  const goal = watch('goal')
+  const status = watch('status')
 
   useEffect(() => {
     if (open) {
-      const initialClientId = fixedMember ? fixedMember.id : ''
+      const initialClientId = diet ? String(diet.clientId) : fixedMember ? fixedMember.id : ''
       reset({
         clientId: initialClientId,
-        trainerId: '',
-        name: '',
-        goal: 'Fitness',
-        description: '',
-        startDate: '',
-        endDate: '',
-        caloriesTarget: '',
-        proteinTarget: '',
-        carbsTarget: '',
-        fatTarget: '',
-        waterTarget: '',
-        status: 'Draft',
+        trainerId: diet?.trainerId ? String(diet.trainerId) : '',
+        name: diet?.name ?? '',
+        goal: diet?.goal ?? 'Fitness',
+        description: diet?.description ?? '',
+        startDate: diet?.startDate?.slice(0, 10) ?? '',
+        endDate: diet?.endDate?.slice(0, 10) ?? '',
+        caloriesTarget: diet?.caloriesTarget ?? '',
+        proteinTarget: diet?.proteinTarget ?? '',
+        carbsTarget: diet?.carbsTarget ?? '',
+        fatTarget: diet?.fatTarget ?? '',
+        waterTarget: diet?.waterTarget ?? '',
+        status: diet?.status ?? 'Draft',
       })
       setClientId(initialClientId)
-      setTrainerId('')
+      setTrainerId(diet?.trainerId ? String(diet.trainerId) : '')
     }
-  }, [open, fixedMember, reset])
+  }, [open, diet, fixedMember, reset])
 
   const selectedMember = memberOptions.find((m) => m.id === clientId) ?? fixedMember
   const branchTrainers = useMemo(
@@ -96,31 +103,35 @@ export function CreateDietDialog({
   )
 
   const onSubmit = (values: FormValues) => {
-    create.mutate(
-      {
-        clientId: Number(values.clientId),
-        trainerId: values.trainerId ? Number(values.trainerId) : undefined,
-        name: values.name,
-        goal: values.goal,
-        description: values.description || undefined,
-        startDate: values.startDate || undefined,
-        endDate: values.endDate || undefined,
-        caloriesTarget: values.caloriesTarget ? Number(values.caloriesTarget) : undefined,
-        proteinTarget: values.proteinTarget ? Number(values.proteinTarget) : undefined,
-        carbsTarget: values.carbsTarget ? Number(values.carbsTarget) : undefined,
-        fatTarget: values.fatTarget ? Number(values.fatTarget) : undefined,
-        waterTarget: values.waterTarget ? Number(values.waterTarget) : undefined,
-        status: values.status,
-      },
-      { onSuccess: onClose }
-    )
+    const payload = {
+      trainerId: values.trainerId ? Number(values.trainerId) : undefined,
+      name: values.name,
+      goal: values.goal,
+      description: values.description || undefined,
+      startDate: values.startDate || undefined,
+      endDate: values.endDate || undefined,
+      caloriesTarget: values.caloriesTarget ? Number(values.caloriesTarget) : undefined,
+      proteinTarget: values.proteinTarget ? Number(values.proteinTarget) : undefined,
+      carbsTarget: values.carbsTarget ? Number(values.carbsTarget) : undefined,
+      fatTarget: values.fatTarget ? Number(values.fatTarget) : undefined,
+      waterTarget: values.waterTarget ? Number(values.waterTarget) : undefined,
+      status: values.status,
+    }
+
+    if (isEdit) {
+      update.mutate(payload, { onSuccess: onClose })
+    } else {
+      create.mutate({ ...payload, clientId: Number(values.clientId) }, { onSuccess: onClose })
+    }
   }
+
+  const isPending = create.isPending || update.isPending
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Diet Plan</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Diet Plan' : 'Create Diet Plan'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {!fixedMember && (
@@ -128,6 +139,7 @@ export function CreateDietDialog({
               <Label>Member</Label>
               <Select
                 value={clientId}
+                disabled={isEdit}
                 onValueChange={(v) => {
                   setClientId(v)
                   setValue('clientId', v)
@@ -174,7 +186,7 @@ export function CreateDietDialog({
 
           <div className="space-y-1.5">
             <Label>Goal</Label>
-            <Select defaultValue="Fitness" onValueChange={(v) => setValue('goal', v as DietGoal)}>
+            <Select value={goal} onValueChange={(v) => setValue('goal', v as DietGoal)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -225,7 +237,7 @@ export function CreateDietDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select defaultValue="Draft" onValueChange={(v) => setValue('status', v as DietStatus)}>
+              <Select value={status} onValueChange={(v) => setValue('status', v as DietStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -240,8 +252,8 @@ export function CreateDietDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? 'Creating...' : 'Create Diet Plan'}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Diet Plan'}
             </Button>
           </DialogFooter>
         </form>

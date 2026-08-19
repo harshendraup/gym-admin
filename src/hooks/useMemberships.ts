@@ -1,111 +1,67 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { membershipsApi, type MembershipPlan, type SubscribePayload } from '@/api/memberships.api'
-import { useAuthStore } from '@/store/auth.store'
-import { toast } from './use-toast'
+import {
+  membershipsApi, type MembershipPayload, type UpdateMembershipPayload, type MembershipListFilters,
+} from '@/api/memberships.api'
+import { getApiErrorMessage } from '@/lib/api-error'
+import { toast } from 'sonner'
 
-const keys = {
-  plans: (businessId: string) => ['memberships', 'plans', businessId] as const,
-  expiring: (businessId: string, days: number) => ['memberships', 'expiring', businessId, days] as const,
-  memberHistory: (businessId: string, memberId: string) => ['memberships', 'history', businessId, memberId] as const,
+export const membershipKeys = {
+  all: () => ['memberships'] as const,
+  list: (filters?: MembershipListFilters) =>
+    ['memberships', filters?.businessId ?? 'own', filters?.branchId ?? 'all'] as const,
 }
 
-function resolveScopeId(overrideBusinessId?: string) {
-  if ((overrideBusinessId ?? '').trim()) return (overrideBusinessId ?? '').trim()
-  const authState = useAuthStore.getState()
-  const context = (authState.gymContext ?? {}) as { businessId?: string; business_id?: string }
-  const user = (authState.user ?? {}) as { businessId?: string | null; business_id?: string | null }
-  return (context.businessId || context.business_id || user.businessId || user.business_id || '').trim()
-}
-
-export function useMembershipPlans(overrideBusinessId?: string) {
-  const businessId = resolveScopeId(overrideBusinessId)
+/** The backend scopes this per the caller's role; businessId/branchId filters only take effect for a superadmin caller. */
+export function useMemberships(filters?: MembershipListFilters) {
   return useQuery({
-    queryKey: keys.plans(businessId),
-    queryFn: () => membershipsApi.listPlans(businessId),
-    enabled: !!businessId,
+    queryKey: membershipKeys.list(filters),
+    queryFn: () => membershipsApi.list(filters),
+    staleTime: 30_000,
   })
 }
 
-export function useMembershipPlan(planId: string, overrideBusinessId?: string) {
-  const businessId = resolveScopeId(overrideBusinessId)
-  return useQuery({
-    queryKey: ['memberships', 'plan', businessId, planId],
-    queryFn: () => membershipsApi.showPlan(businessId, planId),
-    enabled: !!businessId && !!planId,
-  })
-}
-
-export function useExpiringMemberships(days: number = 7) {
-  const businessId = resolveScopeId()
-  return useQuery({
-    queryKey: keys.expiring(businessId, days),
-    queryFn: () => membershipsApi.expiring(businessId, days),
-    enabled: !!businessId,
-  })
-}
-
-export function useMemberSubscriptions(memberId: string) {
-  const businessId = resolveScopeId()
-  return useQuery({
-    queryKey: keys.memberHistory(businessId, memberId),
-    queryFn: () => membershipsApi.memberHistory(businessId, memberId),
-    enabled: !!businessId && !!memberId,
-  })
-}
-
-export function useCreateMembershipPlan(overrideBusinessId?: string) {
-  const businessId = resolveScopeId(overrideBusinessId)
-  const qc = useQueryClient()
+export function useCreateMembership() {
+  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: Partial<MembershipPlan>) => membershipsApi.createPlan(businessId, data),
+    mutationFn: (data: MembershipPayload) => membershipsApi.create(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.plans(businessId) })
-      toast({ title: 'Plan created', variant: 'default' })
+      queryClient.invalidateQueries({ queryKey: membershipKeys.all() })
+      toast.success('Membership plan created')
     },
-    onError: () => toast({ title: 'Failed to create plan', variant: 'destructive' }),
+    onError: (error: any) => {
+      toast.error(getApiErrorMessage(error, 'Failed to create membership plan'))
+    },
   })
 }
 
-export function useUpdateMembershipPlan(overrideBusinessId?: string) {
-  const businessId = resolveScopeId(overrideBusinessId)
-  const qc = useQueryClient()
+export function useUpdateMembership() {
+  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ planId, data }: { planId: string; data: Partial<MembershipPlan> }) =>
-      membershipsApi.updatePlan(businessId, planId, data),
+    mutationFn: ({ id, data }: { id: number; data: UpdateMembershipPayload }) =>
+      membershipsApi.update(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.plans(businessId) })
-      toast({ title: 'Plan updated' })
+      queryClient.invalidateQueries({ queryKey: membershipKeys.all() })
+      toast.success('Membership plan updated')
     },
-    onError: () => toast({ title: 'Failed to update plan', variant: 'destructive' }),
+    onError: (error: any) => {
+      toast.error(getApiErrorMessage(error, 'Failed to update membership plan'))
+    },
   })
 }
 
-export function useSubscribeMember() {
-  const businessId = resolveScopeId()
-  const qc = useQueryClient()
+export function useDeleteMembership() {
+  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: SubscribePayload) => membershipsApi.subscribe(businessId, data),
-    onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: keys.memberHistory(businessId, variables.gymMemberId) })
-      toast({ title: 'Subscription created', variant: 'default' })
-    },
-    onError: () => toast({ title: 'Subscription failed', variant: 'destructive' }),
-  })
-}
-
-export function useDeleteMembershipPlan(overrideBusinessId?: string) {
-  const businessId = resolveScopeId(overrideBusinessId)
-  const qc = useQueryClient()
-
-  return useMutation({
-    mutationFn: (planId: string) => membershipsApi.deletePlan(businessId, planId),
+    mutationFn: (id: number) => membershipsApi.delete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.plans(businessId) })
-      toast({ title: 'Plan deleted' })
+      queryClient.invalidateQueries({ queryKey: membershipKeys.all() })
+      toast.success('Membership plan removed')
     },
-    onError: () => toast({ title: 'Failed to delete plan', variant: 'destructive' }),
+    onError: (error: any) => {
+      toast.error(getApiErrorMessage(error, 'Failed to remove membership plan'))
+    },
   })
 }

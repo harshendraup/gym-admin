@@ -29,6 +29,7 @@ const SuperAdminAdminsPage = lazy(() => import('@/pages/superadmin/SuperAdminAdm
 const SuperAdminSubAdminsPage = lazy(() => import('@/pages/superadmin/SuperAdminSubAdminsPage'))
 const SuperAdminTrainersPage = lazy(() => import('@/pages/superadmin/SuperAdminTrainersPage'))
 const SuperAdminMembersPage = lazy(() => import('@/pages/superadmin/SuperAdminMembersPage'))
+const SuperAdminMembershipsPage = lazy(() => import('@/pages/superadmin/SuperAdminMembershipsPage'))
 
 // Admin
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
@@ -39,6 +40,7 @@ const AdminDietsPage = lazy(() => import('@/pages/admin/AdminDietsPage'))
 const AdminTrainingProgramsPage = lazy(() => import('@/pages/admin/AdminTrainingProgramsPage'))
 const AdminMembersPage = lazy(() => import('@/pages/admin/AdminMembersPage'))
 const AdminMemberDetailPage = lazy(() => import('@/pages/admin/AdminMemberDetailPage'))
+const AdminMembershipsPage = lazy(() => import('@/pages/admin/AdminMembershipsPage'))
 
 // Sub-Admin
 const SubAdminDashboardPage = lazy(() => import('@/pages/sub-admin/SubAdminDashboardPage'))
@@ -47,6 +49,7 @@ const SubAdminDietsPage = lazy(() => import('@/pages/sub-admin/SubAdminDietsPage
 const SubAdminTrainingProgramsPage = lazy(() => import('@/pages/sub-admin/SubAdminTrainingProgramsPage'))
 const SubAdminMembersPage = lazy(() => import('@/pages/sub-admin/SubAdminMembersPage'))
 const SubAdminMemberDetailPage = lazy(() => import('@/pages/sub-admin/SubAdminMemberDetailPage'))
+const SubAdminMembershipsPage = lazy(() => import('@/pages/sub-admin/SubAdminMembershipsPage'))
 
 // Public
 const PublicMemberRegisterPage = lazy(() => import('@/pages/public/PublicMemberRegisterPage'))
@@ -79,6 +82,7 @@ export const router = createBrowserRouter([
       { path: 'trainers', element: wrap(SuperAdminTrainersPage) },
       { path: 'members', element: wrap(SuperAdminMembersPage) },
       { path: 'members/:id', element: wrap(SuperAdminMemberDetailPage) },
+      { path: 'memberships', element: wrap(SuperAdminMembershipsPage) },
     ],
   },
 
@@ -95,6 +99,7 @@ export const router = createBrowserRouter([
       { path: 'training-programs', element: wrap(AdminTrainingProgramsPage) },
       { path: 'members', element: wrap(AdminMembersPage) },
       { path: 'members/:id', element: wrap(AdminMemberDetailPage) },
+      { path: 'memberships', element: wrap(AdminMembershipsPage) },
     ],
   },
 
@@ -109,6 +114,7 @@ export const router = createBrowserRouter([
       { path: 'training-programs', element: wrap(SubAdminTrainingProgramsPage) },
       { path: 'members', element: wrap(SubAdminMembersPage) },
       { path: 'members/:id', element: wrap(SubAdminMemberDetailPage) },
+      { path: 'memberships', element: wrap(SubAdminMembershipsPage) },
     ],
   },
 
