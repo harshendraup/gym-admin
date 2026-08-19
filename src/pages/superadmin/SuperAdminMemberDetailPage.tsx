@@ -9,7 +9,7 @@ import { MemberDietsDialog } from '@/components/entity/MemberDietsDialog'
 import { useUser, useDeleteUser, useUsersByRole } from '@/hooks/useUsers'
 import { useBranches } from '@/hooks/useBranches'
 import { useRoles } from '@/hooks/useRoles'
-import { useDietsForClient } from '@/hooks/useDiets'
+import { useDietAssignmentsForMember } from '@/hooks/useDietAssignments'
 import { businessRegistryApi } from '@/api/business-registry.api'
 
 export default function SuperAdminMemberDetailPage() {
@@ -28,7 +28,7 @@ export default function SuperAdminMemberDetailPage() {
   const { data: branches = [] } = useBranches()
   const { trainerRole } = useRoles()
   const { data: trainers = [] } = useUsersByRole(trainerRole?.id)
-  const { data: diets = [] } = useDietsForClient(id)
+  const { data: diets = [] } = useDietAssignmentsForMember(id)
 
   // A trainer can only be assigned within the member's own branch — narrow
   // the picker up front so the request can never fail on a mismatch.
@@ -115,7 +115,7 @@ export default function SuperAdminMemberDetailPage() {
         open={dietsOpen}
         onClose={() => setDietsOpen(false)}
         member={user}
-        diets={diets}
+        assignments={diets}
         trainerOptions={branchTrainers}
         trainerName={trainerName}
       />

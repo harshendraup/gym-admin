@@ -19,7 +19,7 @@ export default function DietPlansPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Diet Plans" />
+      <Header title="Diet Plans  " />
 
       <div className="flex-1 overflow-auto p-6">
         <div className="mb-6">

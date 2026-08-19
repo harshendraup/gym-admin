@@ -30,7 +30,7 @@ export default function AdminMembershipsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Memberships" />
+      {/* <Header title="Memberships" /> */}
       <div className="flex-1 overflow-auto p-6">
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-wrap items-center justify-between gap-4">

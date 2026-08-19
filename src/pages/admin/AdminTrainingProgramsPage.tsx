@@ -188,7 +188,7 @@ export default function AdminTrainingProgramsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Training Programs" />
+      {/* <Header title="Training Programs" /> */}
       <div className="flex-1 overflow-auto p-6">
         <Tabs defaultValue="exercises" className="space-y-4">
           <TabsList>

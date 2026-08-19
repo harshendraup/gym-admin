@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { CreateDietDialog } from '@/components/entity/CreateDietDialog'
+import { DietPlanLibrarySection } from '@/components/entity/DietPlanLibrarySection'
+import { DietPlanDetailDialog } from '@/components/entity/DietPlanDetailDialog'
+import { CreateDietPlanDialog } from '@/components/entity/CreateDietPlanDialog'
+import { AssignDietPlanDialog } from '@/components/entity/AssignDietPlanDialog'
+import { EditDietAssignmentDialog } from '@/components/entity/EditDietAssignmentDialog'
 import { DietPlanGrid } from '@/components/entity/DietPlanGrid'
-import { useDiets, useDeleteDiet } from '@/hooks/useDiets'
+import { useDietPlans, useDeleteDietPlan } from '@/hooks/useDietPlans'
+import { useDietAssignments, useDeleteDietAssignment } from '@/hooks/useDietAssignments'
 import { useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
-import type { DietRecord } from '@/api/diets.api'
+import { useAuthStore } from '@/store/auth.store'
+import type { DietAssignmentRecord } from '@/api/diet-assignments.api'
+import type { DietPlanRecord } from '@/api/diet-plans.api'
 import type { ManagedUser } from '@/api/user-management.api'
 import { Hero, ScoreCard, ScoreboardCta } from '@/components/scoreboard/primitives'
 
@@ -19,23 +26,34 @@ function findUser(users: ManagedUser[], id: number | null) {
 }
 
 export default function SubAdminDietsPage() {
-  const { data: diets, isLoading, isError, refetch } = useDiets()
+  const gymContext = useAuthStore((s) => s.gymContext)
   const { memberRole, trainerRole } = useRoles()
   const { data: members = [] } = useUsersByRole(memberRole?.id)
   const { data: trainers = [] } = useUsersByRole(trainerRole?.id)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<DietRecord | null>(null)
-  const deleteDiet = useDeleteDiet()
 
-  const memberLabel = (id: number) => {
+  const plans = useDietPlans()
+  const assignments = useDietAssignments()
+  const deletePlan = useDeleteDietPlan()
+  const deleteAssignment = useDeleteDietAssignment()
+
+  const [planFormOpen, setPlanFormOpen] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<DietPlanRecord | null>(null)
+  const [detailPlan, setDetailPlan] = useState<DietPlanRecord | null>(null)
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [assignFixedPlanId, setAssignFixedPlanId] = useState<number | undefined>(undefined)
+  const [editingAssignment, setEditingAssignment] = useState<DietAssignmentRecord | null>(null)
+
+  const memberName = (id: number) => {
     const u = findUser(members, id)
     return u ? (u.fullName ?? u.firstName) : `#${id}`
   }
-  const trainerLabel = (id: number | null) => {
+  const trainerName = (id: number | null) => {
     if (!id) return 'Unassigned'
     const u = findUser(trainers, id)
     return u ? (u.fullName ?? u.firstName) : `#${id}`
   }
+  const planLookup = (dietPlanId: number) =>
+    plans.data?.find((p) => String(p.id) === String(dietPlanId))
 
   return (
     <>
@@ -44,38 +62,87 @@ export default function SubAdminDietsPage() {
         placeholderLabel="nutrition"
         eyebrow="Nutrition Programs"
         title="Diet Plans"
-        subtitle="Plans assigned to members in your branch, tracked start to finish."
+        subtitle="Build reusable diet plans, then assign them to members in your branch."
       />
 
-      <ScoreCard
-        title={`Active Programs · ${diets?.length ?? 0}`}
-        subtitle="Diet plans assigned to members in your branch"
-        action={
-          <ScoreboardCta icon={Plus} onClick={() => { setEditing(null); setFormOpen(true) }}>
-            Assign Diet Plan
-          </ScoreboardCta>
-        }
-      >
-        <DietPlanGrid
-          data={diets}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="No diet plans yet. Assign the first one."
-          memberLabel={memberLabel}
-          trainerLabel={trainerLabel}
-          onEdit={(d) => { setEditing(d); setFormOpen(true) }}
-          onDelete={(d) => deleteDiet.mutate(d.id)}
-          deletingId={deleteDiet.isPending ? (deleteDiet.variables ?? null) : null}
+      <div className="space-y-6">
+        <DietPlanLibrarySection
+          data={plans.data}
+          isLoading={plans.isLoading}
+          isError={plans.isError}
+          onRetry={plans.refetch}
+          onCreate={() => { setEditingPlan(null); setPlanFormOpen(true) }}
+          onOpenPlan={setDetailPlan}
         />
-      </ScoreCard>
 
-      <CreateDietDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
+        <ScoreCard
+          title={`Active Assignments · ${assignments.data?.length ?? 0}`}
+          subtitle="Which members are on a diet plan right now, and who's coaching them"
+          action={
+            <ScoreboardCta
+              icon={Plus}
+              onClick={() => { setAssignFixedPlanId(undefined); setAssignOpen(true) }}
+            >
+              Assign to Member
+            </ScoreboardCta>
+          }
+        >
+          <DietPlanGrid
+            data={assignments.data}
+            planLookup={planLookup}
+            isLoading={assignments.isLoading || plans.isLoading}
+            isError={assignments.isError}
+            onRetry={assignments.refetch}
+            emptyMessage={
+              (plans.data?.length ?? 0) === 0
+                ? 'Create a diet plan in the library above, then assign it to a member.'
+                : 'No members are on a diet plan yet — assign your first one.'
+            }
+            memberLabel={memberName}
+            trainerLabel={trainerName}
+            onEdit={setEditingAssignment}
+            onDelete={(a) => deleteAssignment.mutate(a.id)}
+            deletingId={deleteAssignment.isPending ? (deleteAssignment.variables ?? null) : null}
+          />
+        </ScoreCard>
+      </div>
+
+      <DietPlanDetailDialog
+        open={!!detailPlan}
+        onClose={() => setDetailPlan(null)}
+        plan={detailPlan}
+        onEdit={(p) => { setDetailPlan(null); setEditingPlan(p); setPlanFormOpen(true) }}
+        onDelete={(p) => {
+          if (window.confirm(`Delete "${p.name}"? Members currently assigned to it will keep their assignment, but it'll no longer be in the library.`)) {
+            deletePlan.mutate(p.id)
+            setDetailPlan(null)
+          }
+        }}
+        onAssign={(p) => { setDetailPlan(null); setAssignFixedPlanId(p.id); setAssignOpen(true) }}
+        deleting={deletePlan.isPending}
+      />
+
+      <CreateDietPlanDialog
+        open={planFormOpen}
+        onClose={() => setPlanFormOpen(false)}
+        fixedBranchId={gymContext?.branchId ? Number(gymContext.branchId) : undefined}
+        plan={editingPlan}
+      />
+
+      <AssignDietPlanDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
         memberOptions={members}
         trainerOptions={trainers}
-        diet={editing}
+        planOptions={plans.data ?? []}
+        fixedDietPlanId={assignFixedPlanId}
+      />
+
+      <EditDietAssignmentDialog
+        open={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        assignment={editingAssignment}
+        trainerOptions={trainers}
       />
     </>
   )

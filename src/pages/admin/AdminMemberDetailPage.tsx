@@ -8,7 +8,7 @@ import { EditUserDialog } from '@/components/entity/EditUserDialog'
 import { useUser, useDeleteUser, useUsersByRole } from '@/hooks/useUsers'
 import { useBranches } from '@/hooks/useBranches'
 import { useRoles } from '@/hooks/useRoles'
-import { useDietsForClient } from '@/hooks/useDiets'
+import { useDietAssignmentsForMember } from '@/hooks/useDietAssignments'
 import { useAuthStore } from '@/store/auth.store'
 
 export default function AdminMemberDetailPage() {
@@ -20,7 +20,7 @@ export default function AdminMemberDetailPage() {
   const { data: branches = [] } = useBranches(gymContext?.businessId)
   const { trainerRole } = useRoles()
   const { data: trainers = [] } = useUsersByRole(trainerRole?.id)
-  const { data: diets = [] } = useDietsForClient(id)
+  const { data: diets = [] } = useDietAssignmentsForMember(id)
   const [assignTrainerOpen, setAssignTrainerOpen] = useState(false)
   const [dietsOpen, setDietsOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -101,7 +101,7 @@ export default function AdminMemberDetailPage() {
         open={dietsOpen}
         onClose={() => setDietsOpen(false)}
         member={user}
-        diets={diets}
+        assignments={diets}
         trainerOptions={branchTrainers}
         trainerName={trainerName}
       />

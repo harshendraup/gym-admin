@@ -1,26 +1,28 @@
 import { AlertTriangle, RefreshCw, Salad } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DietPlanCard } from './DietPlanCard'
-import type { DietRecord } from '@/api/diets.api'
+import type { DietAssignmentRecord } from '@/api/diet-assignments.api'
+import type { DietPlanRecord } from '@/api/diet-plans.api'
 
 interface DietPlanGridProps {
-  data: DietRecord[] | undefined
+  data: DietAssignmentRecord[] | undefined
+  planLookup: (dietPlanId: number) => DietPlanRecord | undefined
   isLoading: boolean
   isError?: boolean
   errorMessage?: string
   onRetry?: () => void
   emptyMessage?: string
-  memberLabel: (clientId: number) => string
+  memberLabel: (memberId: number) => string
   trainerLabel: (trainerId: number | null) => string
-  onEdit?: (d: DietRecord) => void
-  onDelete?: (d: DietRecord) => void
+  onEdit?: (a: DietAssignmentRecord) => void
+  onDelete?: (a: DietAssignmentRecord) => void
   deletingId?: number | null
 }
 
-/** The card-grid body shared by the Admin/Sub-Admin Diet Plans pages — mirrors MembershipPlanGrid's shape. */
+/** The card-grid body shared by the Admin/Sub-Admin "Assigned Diet Plans" section — mirrors MembershipPlanGrid's shape. */
 export function DietPlanGrid({
-  data, isLoading, isError, errorMessage = 'Something went wrong while loading diet plans.',
-  onRetry, emptyMessage = 'No diet plans yet.', memberLabel, trainerLabel, onEdit, onDelete, deletingId,
+  data, planLookup, isLoading, isError, errorMessage = 'Something went wrong while loading diet plan assignments.',
+  onRetry, emptyMessage = 'No diet plans assigned yet.', memberLabel, trainerLabel, onEdit, onDelete, deletingId,
 }: DietPlanGridProps) {
   if (isError) {
     return (
@@ -61,15 +63,16 @@ export function DietPlanGrid({
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-      {data.map((d) => (
+      {data.map((a) => (
         <DietPlanCard
-          key={d.id}
-          diet={d}
-          memberLabel={memberLabel(d.clientId)}
-          trainerLabel={trainerLabel(d.trainerId)}
+          key={a.id}
+          assignment={a}
+          plan={planLookup(a.dietPlanId)}
+          memberLabel={memberLabel(a.memberId)}
+          trainerLabel={trainerLabel(a.trainerId)}
           onEdit={onEdit}
           onDelete={onDelete}
-          deleting={deletingId === d.id}
+          deleting={deletingId === a.id}
         />
       ))}
     </div>

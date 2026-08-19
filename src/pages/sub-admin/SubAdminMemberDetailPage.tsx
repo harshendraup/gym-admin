@@ -6,7 +6,7 @@ import { AssignTrainerDialog } from '@/components/entity/AssignTrainerDialog'
 import { MemberDietsDialog } from '@/components/entity/MemberDietsDialog'
 import { useUser, useDeleteUser, useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
-import { useDietsForClient } from '@/hooks/useDiets'
+import { useDietAssignmentsForMember } from '@/hooks/useDietAssignments'
 
 export default function SubAdminMemberDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,7 +17,7 @@ export default function SubAdminMemberDetailPage() {
   // Backend already scopes a sub-admin's /users list to their own branch,
   // so every trainer here is already in the same branch as this member.
   const { data: trainers = [] } = useUsersByRole(trainerRole?.id)
-  const { data: diets = [] } = useDietsForClient(id)
+  const { data: diets = [] } = useDietAssignmentsForMember(id)
   const [assignTrainerOpen, setAssignTrainerOpen] = useState(false)
   const [dietsOpen, setDietsOpen] = useState(false)
   const currentTrainer = trainers.find((t) => t.id === String(user?.trainerId))
@@ -79,7 +79,7 @@ export default function SubAdminMemberDetailPage() {
         open={dietsOpen}
         onClose={() => setDietsOpen(false)}
         member={user}
-        diets={diets}
+        assignments={diets}
         trainerOptions={trainers}
         trainerName={trainerName}
       />

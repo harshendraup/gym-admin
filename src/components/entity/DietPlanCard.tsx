@@ -1,16 +1,18 @@
 import { Flame, GlassWater, Pencil, Trash2, CalendarRange, UserRound, Dumbbell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { DietRecord, DietGoal, DietStatus } from '@/api/diets.api'
+import type { DietAssignmentRecord, DietAssignmentStatus } from '@/api/diet-assignments.api'
+import type { DietPlanRecord, DietPlanGoal } from '@/api/diet-plans.api'
 
-const GOAL_ACCENT: Record<DietGoal, { stripe: string; text: string; chipBg: string }> = {
+const GOAL_ACCENT: Record<DietPlanGoal, { stripe: string; text: string; chipBg: string }> = {
   'Weight Loss': { stripe: 'from-emerald-400 to-green-500', text: 'text-emerald-600', chipBg: 'bg-emerald-50' },
   'Muscle Gain': { stripe: 'from-sky-400 to-blue-500', text: 'text-blue-600', chipBg: 'bg-blue-50' },
   'Fat Loss': { stripe: 'from-orange-400 to-amber-500', text: 'text-orange-600', chipBg: 'bg-orange-50' },
   'Fitness': { stripe: 'from-primary to-violet-500', text: 'text-primary', chipBg: 'bg-primary/5' },
 }
+const NEUTRAL_ACCENT = { stripe: 'from-slate-300 to-slate-400', text: 'text-slate-500', chipBg: 'bg-slate-50' }
 
-const STATUS_DOT: Record<DietStatus, string> = {
+const STATUS_DOT: Record<DietAssignmentStatus, string> = {
   Draft: 'bg-slate-400',
   Active: 'bg-emerald-500',
   Completed: 'bg-blue-500',
@@ -19,9 +21,9 @@ const STATUS_DOT: Record<DietStatus, string> = {
 // Fixed regardless of goal color, so a member row always reads as "member"
 // and a trainer row always reads as "trainer" no matter which card it's on.
 const PERSON_STYLE = {
-  member: { bg: 'bg-violet-100', text: 'text-violet-700', label: 'Member', Icon: UserRound },
-  trainer: { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Coach', Icon: Dumbbell },
-  unassigned: { bg: 'bg-slate-100', text: 'text-slate-400', label: 'Coach', Icon: Dumbbell },
+  member: { bg: 'bg-violet-100', text: 'text-violet-700', label: 'Member' },
+  trainer: { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Coach' },
+  unassigned: { bg: 'bg-slate-100', text: 'text-slate-400', label: 'Coach' },
 } as const
 
 function initials(name: string) {
@@ -31,16 +33,18 @@ function initials(name: string) {
 }
 
 interface DietPlanCardProps {
-  diet: DietRecord
+  assignment: DietAssignmentRecord
+  plan: DietPlanRecord | undefined
   memberLabel: string
   trainerLabel: string
-  onEdit?: (d: DietRecord) => void
-  onDelete?: (d: DietRecord) => void
+  onEdit?: (a: DietAssignmentRecord) => void
+  onDelete?: (a: DietAssignmentRecord) => void
   deleting?: boolean
 }
 
-export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDelete, deleting }: DietPlanCardProps) {
-  const accent = GOAL_ACCENT[d.goal]
+/** One member's assignment to a diet plan — the plan's name/goal/macros are joined in via `plan`. */
+export function DietPlanCard({ assignment: a, plan, memberLabel, trainerLabel, onEdit, onDelete, deleting }: DietPlanCardProps) {
+  const accent = plan ? GOAL_ACCENT[plan.goal] : NEUTRAL_ACCENT
 
   // Targets come back as decimal strings ("2800.00") — drop the trailing
   // zeros so a whole-number target doesn't overflow.
@@ -49,10 +53,10 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
   const isTrainerAssigned = trainerLabel !== 'Unassigned'
   const trainerStyle = isTrainerAssigned ? PERSON_STYLE.trainer : PERSON_STYLE.unassigned
 
-  const calories = d.caloriesTarget ? num(d.caloriesTarget) : null
-  const protein = d.proteinTarget ? num(d.proteinTarget) : 0
-  const carbs = d.carbsTarget ? num(d.carbsTarget) : 0
-  const fat = d.fatTarget ? num(d.fatTarget) : 0
+  const calories = plan?.caloriesTarget ? num(plan.caloriesTarget) : null
+  const protein = plan?.proteinTarget ? num(plan.proteinTarget) : 0
+  const carbs = plan?.carbsTarget ? num(plan.carbsTarget) : 0
+  const fat = plan?.fatTarget ? num(plan.fatTarget) : 0
 
   // Approximate each macro's share of daily energy (protein/carbs = 4 kcal/g,
   // fat = 9 kcal/g) to size a proportional bar rather than three equal boxes.
@@ -66,9 +70,7 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
       ].filter((m) => m.grams > 0)
     : []
 
-  const dateRange = d.startDate || d.endDate
-    ? `${d.startDate?.slice(0, 10) ?? '—'} → ${d.endDate?.slice(0, 10) ?? 'ongoing'}`
-    : null
+  const dateRange = `${a.startDate.slice(0, 10)} → ${a.endDate?.slice(0, 10) ?? 'ongoing'}`
 
   return (
     <div
@@ -82,16 +84,16 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
           <span className={cn('inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide', accent.chipBg, accent.text)}>
-            {d.goal}
+            {plan?.goal ?? 'Unknown goal'}
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[d.status])} />
-            <span>{d.status}</span>
+            <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[a.status])} />
+            <span>{a.status}</span>
           </div>
         </div>
 
-        <h3 className="mt-2 text-lg font-bold leading-tight text-slate-900">{d.name}</h3>
-        {d.description && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{d.description}</p>}
+        <h3 className="mt-2 text-lg font-bold leading-tight text-slate-900">{plan?.name ?? 'Deleted plan'}</h3>
+        {plan?.description && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{plan.description}</p>}
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="flex items-center gap-2.5">
@@ -114,13 +116,11 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
           </div>
         </div>
 
-        {dateRange && (
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
-            <CalendarRange className="h-3.5 w-3.5 text-slate-400" /> {dateRange}
-          </div>
-        )}
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <CalendarRange className="h-3.5 w-3.5 text-slate-400" /> {dateRange}
+        </div>
 
-        {(calories !== null || macroBar.length > 0 || d.waterTarget) && (
+        {(calories !== null || macroBar.length > 0 || plan?.waterTarget) && (
           <div className="mt-4 border-t border-slate-100 pt-4">
             {calories !== null && (
               <div className="flex items-baseline gap-1.5">
@@ -148,9 +148,9 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
               </div>
             )}
 
-            {d.waterTarget && (
+            {plan?.waterTarget && (
               <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-600">
-                <GlassWater className="h-3.5 w-3.5" /> {num(d.waterTarget)}L water
+                <GlassWater className="h-3.5 w-3.5" /> {num(plan.waterTarget)}L water
               </div>
             )}
           </div>
@@ -159,12 +159,12 @@ export function DietPlanCard({ diet: d, memberLabel, trainerLabel, onEdit, onDel
         {(onEdit || onDelete) && (
           <div className="mt-auto flex gap-2 pt-4">
             {onEdit && (
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => onEdit(d)}>
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => onEdit(a)}>
                 <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
               </Button>
             )}
             {onDelete && (
-              <Button size="sm" variant="destructive" onClick={() => onDelete(d)} disabled={deleting}>
+              <Button size="sm" variant="destructive" onClick={() => onDelete(a)} disabled={deleting}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
