@@ -12,6 +12,8 @@ interface DietPlanLibrarySectionProps {
   onRetry?: () => void
   onCreate: () => void
   onOpenPlan: (plan: DietPlanRecord) => void
+  onDuplicatePlan?: (plan: DietPlanRecord) => void
+  onArchivePlan?: (plan: DietPlanRecord) => void
   defaultOpen?: boolean
 }
 
@@ -29,6 +31,8 @@ export function DietPlanLibrarySection({
   onRetry,
   onCreate,
   onOpenPlan,
+  onDuplicatePlan,
+  onArchivePlan,
   defaultOpen = false,
 }: DietPlanLibrarySectionProps) {
   const [open, setOpen] = useState(defaultOpen)
@@ -92,7 +96,13 @@ export function DietPlanLibrarySection({
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {data!.map((plan) => (
-                  <DietPlanTemplateCard key={plan.id} plan={plan} onOpen={onOpenPlan} />
+                  <DietPlanTemplateCard
+                    key={plan.id}
+                    plan={plan}
+                    onOpen={onOpenPlan}
+                    onDuplicate={onDuplicatePlan}
+                    onArchive={onArchivePlan}
+                  />
                 ))}
               </div>
             )}

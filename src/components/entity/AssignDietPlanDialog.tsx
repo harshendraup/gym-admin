@@ -20,6 +20,8 @@ const schema = z.object({
   dietPlanId: z.string().min(1, 'Select a diet plan'),
   trainerId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
+  reviewDate: z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -66,6 +68,8 @@ export function AssignDietPlanDialog({
         dietPlanId: initialPlanId,
         trainerId: '',
         startDate: new Date().toISOString().slice(0, 10),
+        endDate: '',
+        reviewDate: '',
       })
       setMemberId(initialMemberId)
       setTrainerId('')
@@ -90,6 +94,8 @@ export function AssignDietPlanDialog({
         dietPlanId: Number(values.dietPlanId),
         trainerId: values.trainerId ? Number(values.trainerId) : undefined,
         startDate: values.startDate,
+        endDate: values.endDate || undefined,
+        reviewDate: values.reviewDate || undefined,
       },
       { onSuccess: onClose }
     )
@@ -183,10 +189,20 @@ export function AssignDietPlanDialog({
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Start Date</Label>
-            <Input type="date" {...register('startDate')} />
-            {errors.startDate && <p className="text-xs text-red-600">{errors.startDate.message}</p>}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label>Start Date</Label>
+              <Input type="date" {...register('startDate')} />
+              {errors.startDate && <p className="text-xs text-red-600">{errors.startDate.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Date</Label>
+              <Input type="date" {...register('endDate')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Review Date</Label>
+              <Input type="date" {...register('reviewDate')} />
+            </div>
           </div>
 
           <DialogFooter>

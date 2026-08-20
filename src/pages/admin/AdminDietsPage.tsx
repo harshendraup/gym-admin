@@ -7,8 +7,8 @@ import { DietPlanDetailDialog } from '@/components/entity/DietPlanDetailDialog'
 import { CreateDietPlanDialog } from '@/components/entity/CreateDietPlanDialog'
 import { AssignDietPlanDialog } from '@/components/entity/AssignDietPlanDialog'
 import { EditDietAssignmentDialog } from '@/components/entity/EditDietAssignmentDialog'
-import { DietPlanGrid } from '@/components/entity/DietPlanGrid'
-import { useDietPlans, useDeleteDietPlan } from '@/hooks/useDietPlans'
+import { DietPlanTable } from '@/components/entity/DietPlanTable'
+import { useDietPlans, useDeleteDietPlan, useDuplicateDietPlan, useUpdateAnyDietPlan } from '@/hooks/useDietPlans'
 import { useDietAssignments, useDeleteDietAssignment } from '@/hooks/useDietAssignments'
 import { useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
@@ -35,6 +35,8 @@ export default function AdminDietsPage() {
   const assignments = useDietAssignments()
   const deletePlan = useDeleteDietPlan()
   const deleteAssignment = useDeleteDietAssignment()
+  const duplicatePlan = useDuplicateDietPlan()
+  const updateAnyPlan = useUpdateAnyDietPlan()
 
   const [planFormOpen, setPlanFormOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<DietPlanRecord | null>(null)
@@ -66,6 +68,8 @@ export default function AdminDietsPage() {
             onRetry={plans.refetch}
             onCreate={() => { setEditingPlan(null); setPlanFormOpen(true) }}
             onOpenPlan={setDetailPlan}
+            onDuplicatePlan={(p) => duplicatePlan.mutate(p.id)}
+            onArchivePlan={(p) => updateAnyPlan.mutate({ id: p.id, data: { status: 'Archived', isActive: false } })}
           />
 
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -84,7 +88,7 @@ export default function AdminDietsPage() {
             </Button>
           </div>
 
-          <DietPlanGrid
+          <DietPlanTable
             data={assignments.data}
             planLookup={planLookup}
             isLoading={assignments.isLoading || plans.isLoading}
@@ -115,6 +119,7 @@ export default function AdminDietsPage() {
           }
         }}
         onAssignPlan={(p) => { setDetailPlan(null); setAssignFixedPlanId(p.id); setAssignOpen(true) }}
+        onDuplicatePlan={(p) => { duplicatePlan.mutate(p.id); setDetailPlan(null) }}
         deletingPlan={deletePlan.isPending}
         planFormOpen={planFormOpen}
         onClosePlanForm={() => setPlanFormOpen(false)}
@@ -140,6 +145,7 @@ function DietPlanLibraryDialogs(props: {
   onEditPlan: (p: DietPlanRecord) => void
   onDeletePlan: (p: DietPlanRecord) => void
   onAssignPlan: (p: DietPlanRecord) => void
+  onDuplicatePlan: (p: DietPlanRecord) => void
   deletingPlan: boolean
   planFormOpen: boolean
   onClosePlanForm: () => void
@@ -163,6 +169,7 @@ function DietPlanLibraryDialogs(props: {
         onEdit={props.onEditPlan}
         onDelete={props.onDeletePlan}
         onAssign={props.onAssignPlan}
+        onDuplicate={props.onDuplicatePlan}
         deleting={props.deletingPlan}
       />
 

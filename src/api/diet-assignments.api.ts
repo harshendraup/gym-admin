@@ -19,6 +19,7 @@ export interface DietAssignmentRecord {
   assignedByRole: 'superadmin' | 'admin' | 'sub_admin'
   startDate: string
   endDate: string | null
+  reviewDate: string | null
   status: DietAssignmentStatus
   assignedAt: string
   updatedAt: string
@@ -30,6 +31,7 @@ export interface CreateDietAssignmentPayload {
   trainerId?: number
   startDate: string
   endDate?: string
+  reviewDate?: string
   status?: DietAssignmentStatus
 }
 
@@ -37,6 +39,7 @@ export interface UpdateDietAssignmentPayload {
   trainerId?: number
   startDate?: string
   endDate?: string
+  reviewDate?: string
   status?: DietAssignmentStatus
 }
 

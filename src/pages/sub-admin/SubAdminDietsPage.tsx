@@ -5,8 +5,8 @@ import { DietPlanDetailDialog } from '@/components/entity/DietPlanDetailDialog'
 import { CreateDietPlanDialog } from '@/components/entity/CreateDietPlanDialog'
 import { AssignDietPlanDialog } from '@/components/entity/AssignDietPlanDialog'
 import { EditDietAssignmentDialog } from '@/components/entity/EditDietAssignmentDialog'
-import { DietPlanGrid } from '@/components/entity/DietPlanGrid'
-import { useDietPlans, useDeleteDietPlan } from '@/hooks/useDietPlans'
+import { DietPlanTable } from '@/components/entity/DietPlanTable'
+import { useDietPlans, useDeleteDietPlan, useDuplicateDietPlan, useUpdateAnyDietPlan } from '@/hooks/useDietPlans'
 import { useDietAssignments, useDeleteDietAssignment } from '@/hooks/useDietAssignments'
 import { useUsersByRole } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
@@ -35,6 +35,8 @@ export default function SubAdminDietsPage() {
   const assignments = useDietAssignments()
   const deletePlan = useDeleteDietPlan()
   const deleteAssignment = useDeleteDietAssignment()
+  const duplicatePlan = useDuplicateDietPlan()
+  const updateAnyPlan = useUpdateAnyDietPlan()
 
   const [planFormOpen, setPlanFormOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<DietPlanRecord | null>(null)
@@ -73,6 +75,8 @@ export default function SubAdminDietsPage() {
           onRetry={plans.refetch}
           onCreate={() => { setEditingPlan(null); setPlanFormOpen(true) }}
           onOpenPlan={setDetailPlan}
+          onDuplicatePlan={(p) => duplicatePlan.mutate(p.id)}
+          onArchivePlan={(p) => updateAnyPlan.mutate({ id: p.id, data: { status: 'Archived', isActive: false } })}
         />
 
         <ScoreCard
@@ -87,7 +91,7 @@ export default function SubAdminDietsPage() {
             </ScoreboardCta>
           }
         >
-          <DietPlanGrid
+          <DietPlanTable
             data={assignments.data}
             planLookup={planLookup}
             isLoading={assignments.isLoading || plans.isLoading}
@@ -119,6 +123,7 @@ export default function SubAdminDietsPage() {
           }
         }}
         onAssign={(p) => { setDetailPlan(null); setAssignFixedPlanId(p.id); setAssignOpen(true) }}
+        onDuplicate={(p) => { duplicatePlan.mutate(p.id); setDetailPlan(null) }}
         deleting={deletePlan.isPending}
       />
 
