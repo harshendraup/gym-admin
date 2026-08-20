@@ -3,16 +3,17 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, MapPin } from 'lucide-react'
+import { Plus, MapPin, Eye, Trash2, Mail, Phone, MapPinned, Building2, Calendar } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
 import { EntityListPage } from '@/components/entity/EntityListPage'
-import { useBranches, useCreateBranch } from '@/hooks/useBranches'
+import { useBranches, useCreateBranch, useDeleteBranch } from '@/hooks/useBranches'
 import { useAuthStore } from '@/store/auth.store'
 import type { BranchRecord } from '@/api/branches.api'
 
@@ -93,31 +94,198 @@ function CreateBranchDialog({ open, onClose }: { open: boolean; onClose: () => v
   )
 }
 
-function getColumns(): ColumnDef<BranchRecord>[] {
+function StatusBadge({ status }: { status?: string | null }) {
+  const normalized = (status || '').toLowerCase()
+  const variant = normalized === 'active' ? 'success' : normalized === 'inactive' ? 'secondary' : 'outline'
+  return <Badge variant={variant as any}>{status || 'Unknown'}</Badge>
+}
+
+function getColumns({
+  onView,
+  onDelete,
+}: {
+  onView: (branch: BranchRecord) => void
+  onDelete: (branch: BranchRecord) => void
+}): ColumnDef<BranchRecord>[] {
   return [
     {
       header: 'Branch',
       cell: ({ row }) => (
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
             <MapPin className="h-4 w-4 text-primary" />
           </div>
-          <span className="font-medium text-slate-900">{row.original.branchName}</span>
+          <div className="min-w-0">
+            <div className="truncate font-medium text-slate-900">{row.original.branchName}</div>
+            <div className="truncate text-xs text-slate-500">{row.original.address || 'No address on file'}</div>
+          </div>
         </div>
       ),
     },
-    { header: 'City', cell: ({ row }) => row.original.city || '—' },
-    { header: 'Email', cell: ({ row }) => row.original.email || '—' },
-    { header: 'Mobile', cell: ({ row }) => row.original.mobileNumber || '—' },
-    { header: 'Status', cell: ({ row }) => row.original.status || '—' },
+    {
+      header: 'Location',
+      cell: ({ row }) => {
+        const parts = [row.original.city, row.original.state, row.original.country].filter(Boolean)
+        return <span className="text-slate-700">{parts.length ? parts.join(', ') : '—'}</span>
+      },
+    },
+    {
+      header: 'Contact',
+      cell: ({ row }) => (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 text-slate-700">
+            <Mail className="h-3.5 w-3.5 text-slate-400" />
+            <span className="truncate">{row.original.email || '—'}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+            <Phone className="h-3 w-3 text-slate-400" />
+            <span>{row.original.mobileNumber || '—'}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Created',
+      cell: ({ row }) =>
+        row.original.createdAt ? (
+          <span className="text-slate-600 text-sm">
+            {new Date(row.original.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      header: 'Status',
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      header: 'Actions',
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => onView(row.original)}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={() => onDelete(row.original)}
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+          </Button>
+        </div>
+      ),
+    },
   ]
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value?: string | null }) {
+  return (
+    <div className="flex items-start gap-3 py-2">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+        <Icon className="h-4 w-4 text-slate-500" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
+        <div className="text-sm text-slate-800 break-words">{value || '—'}</div>
+      </div>
+    </div>
+  )
+}
+
+function ViewBranchDialog({ branch, onClose }: { branch: BranchRecord | null; onClose: () => void }) {
+  return (
+    <Dialog open={!!branch} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            {branch?.branchName}
+          </DialogTitle>
+          <DialogDescription>Branch details</DialogDescription>
+        </DialogHeader>
+        {branch && (
+          <div className="divide-y divide-slate-100">
+            <DetailRow icon={Building2} label="Branch Name" value={branch.branchName} />
+            <DetailRow icon={Mail} label="Email" value={branch.email} />
+            <DetailRow icon={Phone} label="Mobile Number" value={branch.mobileNumber} />
+            <DetailRow icon={MapPinned} label="Address" value={branch.address} />
+            <DetailRow
+              icon={MapPinned}
+              label="City / State / Country"
+              value={[branch.city, branch.state, branch.country].filter(Boolean).join(', ')}
+            />
+            <DetailRow icon={MapPinned} label="Pincode" value={branch.pincode} />
+            <DetailRow
+              icon={Calendar}
+              label="Created At"
+              value={branch.createdAt ? new Date(branch.createdAt).toLocaleString('en-IN') : undefined}
+            />
+            <DetailRow
+              icon={Calendar}
+              label="Updated At"
+              value={branch.updatedAt ? new Date(branch.updatedAt).toLocaleString('en-IN') : undefined}
+            />
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                <Building2 className="h-4 w-4 text-slate-500" />
+              </div>
+              <div>
+                <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Status</div>
+                <StatusBadge status={branch.status} />
+              </div>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DeleteBranchDialog({ branch, onClose }: { branch: BranchRecord | null; onClose: () => void }) {
+  const deleteBranch = useDeleteBranch()
+
+  const handleDelete = () => {
+    if (!branch) return
+    deleteBranch.mutate(branch.id, { onSuccess: onClose })
+  }
+
+  return (
+    <Dialog open={!!branch} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Branch</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete <span className="font-semibold text-slate-800">{branch?.branchName}</span>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteBranch.isPending}>
+            {deleteBranch.isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export default function AdminBranchesPage() {
   const gymContext = useAuthStore((s) => s.gymContext)
   const { data: branches, isLoading, isError, refetch } = useBranches(gymContext?.businessId)
   const [createOpen, setCreateOpen] = useState(false)
-  const columns = getColumns()
+  const [viewBranch, setViewBranch] = useState<BranchRecord | null>(null)
+  const [deleteBranch, setDeleteBranch] = useState<BranchRecord | null>(null)
+
+  useEffect(() => {
+    console.log('[AdminBranchesPage] branches response:', branches)
+  }, [branches])
+
+  const columns = getColumns({ onView: setViewBranch, onDelete: setDeleteBranch })
 
   return (
     <div className="flex flex-col h-full">
@@ -141,6 +309,8 @@ export default function AdminBranchesPage() {
       </div>
 
       <CreateBranchDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <ViewBranchDialog branch={viewBranch} onClose={() => setViewBranch(null)} />
+      <DeleteBranchDialog branch={deleteBranch} onClose={() => setDeleteBranch(null)} />
     </div>
   )
 }

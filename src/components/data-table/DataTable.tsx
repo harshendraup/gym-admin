@@ -49,13 +49,16 @@ export default function DataTable<TData>({
             {table.getHeaderGroups().map((hg) => (
               <tr
                 key={hg.id}
-                style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
+                style={{
+                  background: 'linear-gradient(180deg, #eef4ff 0%, #e2ecff 100%)',
+                  borderBottom: '1.5px solid rgba(59,130,246,0.25)',
+                }}
               >
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-widest"
-                    style={{ color: '#64748b' }}
+                    className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider"
+                    style={{ color: '#2952a3' }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -93,17 +96,14 @@ export default function DataTable<TData>({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="transition-all duration-150"
+                  className="group relative transition-colors duration-200 ease-out hover:bg-primary/[0.05]"
                   style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.03)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'transparent'
-                  }}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-5 py-3.5">
+                  {row.getVisibleCells().map((cell, i) => (
+                    <td key={cell.id} className="relative px-5 py-3.5">
+                      {i === 0 && (
+                        <span className="absolute left-0 top-0 h-full w-0.5 scale-y-0 bg-primary transition-transform duration-200 ease-out group-hover:scale-y-100" />
+                      )}
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
