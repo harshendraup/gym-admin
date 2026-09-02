@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +9,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import {
   Building2, Plus, Search, MoreVertical, Edit2, Trash2,
   CheckCircle2, XCircle, Clock, Phone, MapPin, Mail,
-  AlertTriangle, RefreshCw,
+  AlertTriangle, RefreshCw, Smartphone,
 } from 'lucide-react'
 import DataTable from '@/components/data-table/DataTable'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -49,12 +50,14 @@ function StatusBadge({ status }: { status?: string | null }) {
 function ActionMenu({
   business,
   onEdit,
+  onConfigureApp,
   onDelete,
   onStatusChange,
   isPending,
 }: {
   business: BusinessRecord
   onEdit: () => void
+  onConfigureApp: () => void
   onDelete: () => void
   onStatusChange: (s: BusinessStatus) => void
   isPending: boolean
@@ -129,6 +132,16 @@ function ActionMenu({
           >
             <Edit2 className="h-3.5 w-3.5" />
             Edit Details
+          </button>
+
+          {/* The gym's white-label app settings — branding, copy, assets,
+              features. Separate from the business record itself. */}
+          <button
+            onClick={() => { onConfigureApp(); setOpen(false) }}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition-colors"
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            Configure App
           </button>
 
           <div className="my-1 mx-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }} />
@@ -600,6 +613,7 @@ export function BusinessFormDialog({
 
 function getColumns(
   onEdit: (b: BusinessRecord) => void,
+  onConfigureApp: (b: BusinessRecord) => void,
   onDelete: (b: BusinessRecord) => void,
   onStatusChange: (b: BusinessRecord, s: BusinessStatus) => void,
   pendingId: number | null,
@@ -684,6 +698,7 @@ function getColumns(
             <ActionMenu
               business={b}
               onEdit={() => onEdit(b)}
+              onConfigureApp={() => onConfigureApp(b)}
               onDelete={() => onDelete(b)}
               onStatusChange={(s) => onStatusChange(b, s)}
               isPending={pendingId === b.id}
@@ -698,6 +713,7 @@ function getColumns(
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BusinessesPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -748,6 +764,7 @@ export default function BusinessesPage() {
 
   const columns = getColumns(
     (b) => { setEditBusiness(b); setFormOpen(true) },
+    (b) => navigate(`/superadmin/businesses/${b.id}/app-config`),
     (b) => setDeleteTarget(b),
     (b, s) => statusMutation.mutate({ id: b.id, status: s }),
     pendingId,

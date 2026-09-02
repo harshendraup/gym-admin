@@ -30,6 +30,7 @@ const SuperAdminSubAdminsPage = lazy(() => import('@/pages/superadmin/SuperAdmin
 const SuperAdminTrainersPage = lazy(() => import('@/pages/superadmin/SuperAdminTrainersPage'))
 const SuperAdminMembersPage = lazy(() => import('@/pages/superadmin/SuperAdminMembersPage'))
 const SuperAdminMembershipsPage = lazy(() => import('@/pages/superadmin/SuperAdminMembershipsPage'))
+const SuperAdminAppConfigPage = lazy(() => import('@/pages/superadmin/SuperAdminAppConfigPage'))
 
 // Admin
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
@@ -83,6 +84,11 @@ export const router = createBrowserRouter([
       { path: 'members', element: wrap(SuperAdminMembersPage) },
       { path: 'members/:id', element: wrap(SuperAdminMemberDetailPage) },
       { path: 'memberships', element: wrap(SuperAdminMembershipsPage) },
+      // Both forms render the same page: the standalone one picks a
+      // business from a dropdown, the deep link arrives from the
+      // Businesses list with one already chosen.
+      { path: 'app-config', element: wrap(SuperAdminAppConfigPage) },
+      { path: 'businesses/:businessId/app-config', element: wrap(SuperAdminAppConfigPage) },
     ],
   },
 

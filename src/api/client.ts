@@ -65,6 +65,11 @@ export async function put<T>(url: string, body?: unknown): Promise<T> {
   return res.data.data
 }
 
+export async function patch<T>(url: string, body?: unknown): Promise<T> {
+  const res: AxiosResponse<ApiResponse<T>> = await apiClient.patch(url, body)
+  return res.data.data
+}
+
 export async function del<T>(url: string): Promise<T> {
   const res: AxiosResponse<ApiResponse<T>> = await apiClient.delete(url)
   return res.data.data
@@ -79,4 +84,4 @@ export async function getPaginated<T>(
 }
 
 // Convenience object used by pages/hooks that prefer `api.get(...)` style
-export const api = { get, post, put, del, getPaginated }
+export const api = { get, post, patch, put, del, getPaginated }
