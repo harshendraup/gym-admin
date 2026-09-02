@@ -53,8 +53,7 @@ pm2 restart gym-os-api
 
 # Verify it actually came back up:
 sleep 2
-pm2 logs gym-os-api --lines 10 --nostream
-curl -s -o /dev/null -w "%{http_code}\n" https://api.krikalone.com/api/v1/diet-plans -H "Authorization: Bearer <a real token>"
+pm2 logs gym-os-api --lines 10 --nostream 
 Notes on the two flagged steps:
 
 Migrations: only run migration:run when you actually added a new migration file — running it with nothing pending is harmless (it just says "Already up to date"), so it's safe to include every time as a habit.
