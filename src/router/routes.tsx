@@ -16,6 +16,9 @@ const wrap = (Component: React.LazyExoticComponent<any>) => (
 )
 
 const LandingPage = lazy(() => import('@/pages/marketing/LandingPage'))
+const AboutPage = lazy(() => import('@/pages/marketing/AboutPage'))
+const ContactPage = lazy(() => import('@/pages/marketing/ContactPage'))
+const PricingPage = lazy(() => import('@/pages/marketing/PricingPage'))
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 
 // Super Admin
@@ -57,6 +60,9 @@ const PublicMemberRegisterPage = lazy(() => import('@/pages/public/PublicMemberR
 
 export const router = createBrowserRouter([
   { path: '/', element: wrap(LandingPage) },
+  { path: '/about', element: wrap(AboutPage) },
+  { path: '/pricing', element: wrap(PricingPage) },
+  { path: '/contact', element: wrap(ContactPage) },
   {
     path: '/auth',
     element: <AuthLayout />,

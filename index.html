@@ -2,10 +2,14 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- /favicon.svg never existed, so every tab was silently falling back to
+         the browser's generic globe icon. apple-touch-icon covers "Add to
+         Home Screen" on iOS, which does not read the favicon link at all. -->
+    <link rel="icon" type="image/png" href="/logo/k1_logo.png" />
+    <link rel="apple-touch-icon" href="/logo/k1_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GymOS Admin</title>
-    <meta name="description" content="GymOS — Enterprise Gym Management Platform" />
+    <title>KrikalOne Admin</title>
+    <meta name="description" content="KrikalOne — Gym SaaS Management Platform" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />

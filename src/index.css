@@ -220,3 +220,48 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+@keyframes kenburns {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to   { transform: scale(1.09) translate3d(-1.5%, -1%, 0); }
+}
+
+@keyframes auroraDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(3%, -3%, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* Continuous ticker — the city strip on the About page. */
+@keyframes marqueeX {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+/*
+ * Ticker track. The content is rendered twice and shifted by exactly half, so
+ * the loop is seamless; hovering pauses it, which is the only way to actually
+ * read a name that is mid-scroll.
+ */
+.marquee-track {
+  animation: marqueeX 32s linear infinite;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Respect the OS "reduce motion" setting for the decorative loops above. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

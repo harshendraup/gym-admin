@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Dumbbell, Users, CreditCard, Salad, CalendarCheck,
   BarChart3, Layers, Building2, ArrowRight, Sparkles, Activity,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { heroImages } from '@/data/heroImages'
+import { siteContact } from '@/data/siteContent'
+import { MarketingNav, MarketingFooter, BrandLogo } from '@/components/marketing/MarketingShell'
 
 const featureHighlights = [
   {
@@ -49,33 +51,7 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen text-white" style={{ background: '#0B0F1A' }}>
-      {/* ── Nav ───────────────────────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 z-30">
-        <div className="mx-auto max-w-7xl flex items-center justify-between px-6 sm:px-10 py-5">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
-            >
-              <Dumbbell className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold">GymOS</span>
-          </div>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.16)',
-              backdropFilter: 'blur(12px)',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.16)' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)' }}
-          >
-            Sign In
-          </button>
-        </div>
-      </header>
+      <MarketingNav transparentUntilScroll />
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section className="relative flex min-h-screen items-center overflow-hidden">
@@ -100,8 +76,12 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 sm:px-10 pt-24">
+          {/* The lockup carries the tagline "Gym SaaS Management Platform",
+              which is why the headline below never has to repeat it. */}
+          <BrandLogo size="lg" />
+
           <div
-            className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold w-fit"
+            className="mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold w-fit"
             style={{ background: 'rgba(191,115,53,0.28)', color: '#F3DDC6', backdropFilter: 'blur(8px)' }}
           >
             <Sparkles className="h-3.5 w-3.5" />
@@ -127,6 +107,19 @@ export default function LandingPage() {
               Get Started
               <ArrowRight className="h-4 w-4" />
             </button>
+            <Link
+              to="/contact"
+              className="flex items-center gap-2 rounded-xl px-6 py-3 text-[15px] font-semibold transition-all duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.16)',
+                backdropFilter: 'blur(12px)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.16)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+            >
+              Talk to us
+            </Link>
             <a
               href="#features"
               className="text-sm font-semibold underline-offset-4 hover:underline"
@@ -183,7 +176,7 @@ export default function LandingPage() {
         <div className="max-w-2xl">
           <h2 className="text-2xl sm:text-3xl font-bold">Everything your gym needs, in one console.</h2>
           <p className="mt-3 text-[15px] leading-7" style={{ color: '#C9D3DF' }}>
-            From day-to-day member operations to multi-location oversight — GymOS covers the full stack of running a modern fitness business.
+            From day-to-day member operations to multi-location oversight — {siteContact.brand} covers the full stack of running a modern fitness business.
           </p>
         </div>
         <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -218,9 +211,13 @@ export default function LandingPage() {
             border: '1px solid rgba(255,255,255,0.12)',
           }}
         >
-          <h2 className="text-2xl sm:text-3xl font-bold">Ready to run your gym on GymOS?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold">Ready to run your gym on {siteContact.brand}?</h2>
           <p className="mt-3 text-[15px]" style={{ color: '#D7DEE8' }}>
-            Sign in to your dashboard and pick up right where you left off.
+            Sign in to your dashboard and pick up right where you left off — or{' '}
+            <Link to="/about" className="font-semibold underline underline-offset-4" style={{ color: '#F3DDC6' }}>
+              read what we built
+            </Link>
+            {' '}first.
           </p>
           <button
             onClick={() => navigate('/auth/login')}
@@ -238,10 +235,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────── */}
-      <footer className="relative z-10 px-6 sm:px-10 py-8 text-center text-xs" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', color: '#7C8798' }}>
-        GymOS — Enterprise Gym Management Platform
-      </footer>
+      <MarketingFooter />
     </div>
   )
 }
