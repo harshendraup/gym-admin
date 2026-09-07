@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { MarketingNav, MarketingFooter } from '@/components/marketing/MarketingShell'
 import { siteContact, contactTopics, responsePromise } from '@/data/siteContent'
+import { contactApi } from '@/api/contact.api'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 const schema = z.object({
   name: z.string().min(2, 'Please enter your full name'),
@@ -72,33 +74,30 @@ export default function ContactPage() {
   }
 
   /**
-   * No /contact endpoint exists on the API yet, so the form composes the
-   * enquiry and hands it to the visitor's mail client. Swap this for an
-   * `api.post('/support/contact', values)` the day the endpoint lands.
+   * Delivers straight to the KrikalOne inbox via the API's /contact route
+   * (ContactMailService, backed by Resend) — no mail client, no manual step.
+   * `topic` is sent as its human-readable label rather than the raw form
+   * value ("demo", "billing", …), since the backend treats it as opaque
+   * display text and never needs the machine value back.
    */
   const onSubmit = async (values: FormValues) => {
     const topicLabel = contactTopics.find((t) => t.value === values.topic)?.label ?? values.topic
-    const body = [
-      `Name: ${values.name}`,
-      `Email: ${values.email}`,
-      values.gym ? `Gym / business: ${values.gym}` : null,
-      values.phone ? `Phone: ${values.phone}` : null,
-      `Topic: ${topicLabel}`,
-      '',
-      values.message,
-    ]
-      .filter(Boolean)
-      .join('\n')
 
-    const href =
-      `mailto:${siteContact.supportEmail}` +
-      `?subject=${encodeURIComponent(`[${topicLabel}] ${values.name}`)}` +
-      `&body=${encodeURIComponent(body)}`
-
-    window.location.href = href
-    setSent(true)
-    toast.success('Opening your email app with the message ready to send.')
-    reset()
+    try {
+      await contactApi.send({
+        name: values.name,
+        email: values.email,
+        gym: values.gym || undefined,
+        phone: values.phone || undefined,
+        topic: topicLabel,
+        message: values.message,
+      })
+      setSent(true)
+      toast.success('Message sent — we usually reply ' + responsePromise.first + '.')
+      reset()
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not send your message. Please try again.'))
+    }
   }
 
   const channels = [
@@ -231,8 +230,7 @@ export default function ContactPage() {
           >
             <h2 className="text-2xl font-bold">Send us a message</h2>
             <p className="mt-2 text-sm leading-6" style={{ color: '#93A0B4' }}>
-              Fill this in and we will open your email app with everything already written out — no
-              account, no sign-up.
+              Fill this in and it goes straight to our inbox — no account, no sign-up.
             </p>
 
             {sent && (
@@ -242,7 +240,7 @@ export default function ContactPage() {
               >
                 <Check className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  Your email app should be open with the message drafted. If nothing happened, write to{' '}
+                  Message sent — we usually reply {responsePromise.first}. Need it sooner? Write to{' '}
                   <a href={`mailto:${siteContact.supportEmail}`} className="underline underline-offset-2">
                     {siteContact.supportEmail}
                   </a>{' '}
@@ -327,7 +325,7 @@ export default function ContactPage() {
                 />
                 <span className="relative flex items-center justify-center gap-2">
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {isSubmitting ? 'Preparing…' : 'Send message'}
+                  {isSubmitting ? 'Sending…' : 'Send message'}
                 </span>
               </button>
 

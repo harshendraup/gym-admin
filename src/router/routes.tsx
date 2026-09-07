@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AuthGuard from './guards/AuthGuard'
 import RoleLayout from './layouts/RoleLayout'
 import SubAdminRoleLayout from './layouts/SubAdminRoleLayout'
+import MemberRoleLayout from './layouts/MemberRoleLayout'
 import AuthLayout from './layouts/AuthLayout'
 import RoleRedirect from './RoleRedirect'
 
@@ -34,6 +35,7 @@ const SuperAdminTrainersPage = lazy(() => import('@/pages/superadmin/SuperAdminT
 const SuperAdminMembersPage = lazy(() => import('@/pages/superadmin/SuperAdminMembersPage'))
 const SuperAdminMembershipsPage = lazy(() => import('@/pages/superadmin/SuperAdminMembershipsPage'))
 const SuperAdminAppConfigPage = lazy(() => import('@/pages/superadmin/SuperAdminAppConfigPage'))
+const SuperAdminPaymentsPage = lazy(() => import('@/pages/superadmin/SuperAdminPaymentsPage'))
 
 // Admin
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
@@ -45,6 +47,7 @@ const AdminTrainingProgramsPage = lazy(() => import('@/pages/admin/AdminTraining
 const AdminMembersPage = lazy(() => import('@/pages/admin/AdminMembersPage'))
 const AdminMemberDetailPage = lazy(() => import('@/pages/admin/AdminMemberDetailPage'))
 const AdminMembershipsPage = lazy(() => import('@/pages/admin/AdminMembershipsPage'))
+const AdminPaymentsPage = lazy(() => import('@/pages/admin/AdminPaymentsPage'))
 
 // Sub-Admin
 const SubAdminDashboardPage = lazy(() => import('@/pages/sub-admin/SubAdminDashboardPage'))
@@ -54,6 +57,10 @@ const SubAdminTrainingProgramsPage = lazy(() => import('@/pages/sub-admin/SubAdm
 const SubAdminMembersPage = lazy(() => import('@/pages/sub-admin/SubAdminMembersPage'))
 const SubAdminMemberDetailPage = lazy(() => import('@/pages/sub-admin/SubAdminMemberDetailPage'))
 const SubAdminMembershipsPage = lazy(() => import('@/pages/sub-admin/SubAdminMembershipsPage'))
+const SubAdminPaymentsPage = lazy(() => import('@/pages/sub-admin/SubAdminPaymentsPage'))
+
+// Member
+const MemberPayPage = lazy(() => import('@/pages/member/MemberPayPage'))
 
 // Public
 const PublicMemberRegisterPage = lazy(() => import('@/pages/public/PublicMemberRegisterPage'))
@@ -90,6 +97,7 @@ export const router = createBrowserRouter([
       { path: 'members', element: wrap(SuperAdminMembersPage) },
       { path: 'members/:id', element: wrap(SuperAdminMemberDetailPage) },
       { path: 'memberships', element: wrap(SuperAdminMembershipsPage) },
+      { path: 'payments', element: wrap(SuperAdminPaymentsPage) },
       // Both forms render the same page: the standalone one picks a
       // business from a dropdown, the deep link arrives from the
       // Businesses list with one already chosen.
@@ -112,6 +120,7 @@ export const router = createBrowserRouter([
       { path: 'members', element: wrap(AdminMembersPage) },
       { path: 'members/:id', element: wrap(AdminMemberDetailPage) },
       { path: 'memberships', element: wrap(AdminMembershipsPage) },
+      { path: 'payments', element: wrap(AdminPaymentsPage) },
     ],
   },
 
@@ -127,6 +136,16 @@ export const router = createBrowserRouter([
       { path: 'members', element: wrap(SubAdminMembersPage) },
       { path: 'members/:id', element: wrap(SubAdminMemberDetailPage) },
       { path: 'memberships', element: wrap(SubAdminMembershipsPage) },
+      { path: 'payments', element: wrap(SubAdminPaymentsPage) },
+    ],
+  },
+
+  {
+    path: 'member',
+    element: <MemberRoleLayout />,
+    children: [
+      { index: true, element: <Navigate to="pay" replace /> },
+      { path: 'pay', element: wrap(MemberPayPage) },
     ],
   },
 

@@ -4,7 +4,7 @@ import { useAuthStore, selectRole } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Users, Dumbbell, UserCog, Zap, Building2, Salad, Activity, CreditCard,
-  Smartphone,
+  Smartphone, Wallet,
 } from 'lucide-react'
 
 const navItems = [
@@ -17,7 +17,7 @@ const navItems = [
   { to: '/superadmin/members', label: 'Members', icon: Users, roles: ['superadmin'] },
   { to: '/superadmin/memberships', label: 'Memberships', icon: CreditCard, roles: ['superadmin'] },
   { to: '/superadmin/app-config', label: 'App Configuration', icon: Smartphone, roles: ['superadmin'] },
-
+  { to: '/superadmin/payments', label: 'Payments', icon: Wallet, roles: ['superadmin'] },
   // Admin
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { to: '/admin/branches', label: 'Branches', icon: Building2, roles: ['admin'] },
@@ -27,12 +27,14 @@ const navItems = [
   { to: '/admin/training-programs', label: 'Training Programs', icon: Activity, roles: ['admin'] },
   { to: '/admin/memberships', label: 'Memberships', icon: CreditCard, roles: ['admin'] },
   { to: '/admin/members', label: 'Members', icon: Users, roles: ['admin'] },
+  { to: '/admin/payments', label: 'Payments', icon: Wallet, roles: ['admin'] },
 
   // Sub-Admin
   { to: '/sub-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['sub_admin'] },
   { to: '/sub-admin/trainers', label: 'Trainers', icon: Dumbbell, roles: ['sub_admin'] },
   { to: '/sub-admin/diets', label: 'Diet Plans', icon: Salad, roles: ['sub_admin'] },
   { to: '/sub-admin/training-programs', label: 'Training Programs', icon: Activity, roles: ['sub_admin'] },
+  { to: '/sub-admin/payments', label: 'Payments', icon: Wallet, roles: ['sub_admin'] },
   { to: '/sub-admin/memberships', label: 'Memberships', icon: CreditCard, roles: ['sub_admin'] },
   { to: '/sub-admin/members', label: 'Members', icon: Users, roles: ['sub_admin'] },
 ]
