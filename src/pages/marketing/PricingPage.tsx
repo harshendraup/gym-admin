@@ -48,7 +48,7 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   )
 }
 
-/** ₹44,998 — grouped the Indian way, matching the currency invoices are in. */
+/** ₹44,444 — grouped the Indian way, matching the currency invoices are in. */
 const inr = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',

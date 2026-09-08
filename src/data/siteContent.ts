@@ -9,18 +9,17 @@ export const siteContact = {
   brand: 'KrikalOne',
   tagline: 'Gym SaaS Management Platform',
 
-  supportEmail: 'info.nestiq@gmail.com',
-  salesEmail: 'info.nestiq@gmail.com',
-
-  phone: '+91 00000 00000',
-  phoneHref: 'tel:+910000000000',
-  whatsapp: '+91 00000 00000',
-  whatsappHref: 'https://wa.me/9414345844',
+  supportEmail: 'krikalone.offical@gmail.com',
+  salesEmail: 'krikalone.offical@gmail.com',
+  phone: '+91 7877419770',
+  phoneHref: 'tel:+917877419770',
+  whatsapp: '+91 7877419770',
+  whatsappHref: 'https://wa.me/917877419770',
 
   address: {
-    line1: 'KrikalOne Technologies',
-    line2: '2nd Floor, Tech Park',
-    city: 'Bengaluru, Karnataka 560001',
+    line1: 'B8B,',
+    line2: 'Dhurav marg, Raja Park, Tilak nagar',
+    city: 'Jaipur, Rajasthan 302004',
     country: 'India',
   },
 
@@ -265,7 +264,7 @@ export const pricingSchedule = [
 export const pricingFaqs = [
   {
     q: 'What does the one-time setup fee actually buy?',
-    a: 'The build of your two member apps — iOS at ₹29,999 and Android at ₹14,999, ₹44,998 for both — including submission to the App Store and Google Play. It is billed 50% on signing and 50% when the platform goes live.',
+    a: 'The build of your two member apps — iOS at ₹29,999 and Android at ₹14,999, ₹44,444 for both — including submission to the App Store and Google Play. It is billed 50% on signing and 50% when the platform goes live.',
   },
   {
     q: 'What happens if we go past 200 members?',
