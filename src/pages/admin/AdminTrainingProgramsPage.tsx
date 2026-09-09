@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Check, Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select'
 import { EntityListPage } from '@/components/entity/EntityListPage'
+import { StepLabel } from '@/components/entity/StepLabel'
 import { AssignTrainingProgramDialog } from '@/components/entity/AssignTrainingProgramDialog'
 import { CreateTrainingProgramDialog } from '@/components/entity/CreateTrainingProgramDialog'
 import { CreateExerciseDialog } from '@/components/entity/CreateExerciseDialog'
@@ -33,24 +34,6 @@ const STATUSES: ProgramAssignmentStatus[] = ['active', 'paused', 'completed', 'c
 function findUser(users: ManagedUser[], id: number | null) {
   if (!id) return undefined
   return users.find((u) => u.id === String(id))
-}
-
-/** Small "① Exercise Library" style tab label — fills in with a checkmark once that stage has content, making the 3-step sequence visible at a glance. */
-function StepLabel({ step, label, done }: { step: number; label: string; done: boolean }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className={
-          done
-            ? 'flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-white'
-            : 'flex h-[18px] w-[18px] items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold text-slate-500'
-        }
-      >
-        {done ? <Check className="h-3 w-3" /> : step}
-      </span>
-      {label}
-    </span>
-  )
 }
 
 function assignmentColumns(
