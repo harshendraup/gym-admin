@@ -46,6 +46,50 @@ export function ConfigureFoodLibraryDialog({ open, onClose, existingConfig }: Co
   }
 
   // ─── System (master-catalog) toggles ────────────────────────────────────
+  /** The category header's "select all" checkbox — adds every catalog group in this category that isn't already in, or removes every system group if they're all already in (custom groups are left untouched either way). */
+  function toggleAllGroupsInCategory(catId: string, catName: string, groups: { id: string; name: string }[]) {
+    const currentCat = findCategory(catId)
+    const allIncluded = groups.length > 0 && groups.every((g) => currentCat?.groups.some((cg) => cg.id === g.id))
+
+    if (allIncluded) {
+      setCategories((prev) =>
+        prev
+          .map((c) => (c.id === catId ? { ...c, groups: c.groups.filter((g) => g.source !== 'system') } : c))
+          .filter((c) => c.groups.length > 0 || c.source === 'custom')
+      )
+      return
+    }
+
+    setCategories((prev) => {
+      const existingCat = prev.find((c) => c.id === catId)
+      const existingGroupIds = new Set((existingCat?.groups ?? []).map((g) => g.id))
+      const newGroups: GymLibraryFoodGroup[] = groups
+        .filter((g) => !existingGroupIds.has(g.id))
+        .map((g) => {
+          const masterFoods = getCatalogFoods(catId, g.id)
+          return {
+            id: g.id,
+            name: g.name,
+            source: 'system',
+            foods: masterFoods.map((f) => ({
+              name: f.name,
+              servingSize: f.serving_size,
+              servingUnit: f.serving_unit,
+              calories: f.calories,
+              protein: f.protein,
+              carbs: f.carbs,
+              fat: f.fat,
+              fiber: f.fiber,
+            })),
+          }
+        })
+      if (existingCat) {
+        return prev.map((c) => (c.id === catId ? { ...c, groups: [...c.groups, ...newGroups] } : c))
+      }
+      return [...prev, { id: catId, name: catName, source: 'system', groups: newGroups }]
+    })
+  }
+
   function toggleSystemGroup(catId: string, catName: string, groupId: string, groupName: string) {
     setCategories((prev) => {
       const existingGroup = prev.find((c) => c.id === catId)?.groups.find((g) => g.id === groupId)
@@ -226,14 +270,31 @@ export function ConfigureFoodLibraryDialog({ open, onClose, existingConfig }: Co
                 const groups = getCatalogGroups(cat.id)
                 const customGroupsHere = findCategory(cat.id)?.groups.filter((g) => g.source === 'custom') ?? []
                 const includedCount = findCategory(cat.id)?.groups.length ?? 0
+                const systemIncludedCount = groups.filter((g) => !!findGroup(cat.id, g.id)).length
+                const allSystemIncluded = groups.length > 0 && systemIncludedCount === groups.length
                 const Icon = categoryIcon(cat.id)
                 return (
                   <div key={cat.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
                       onClick={() => toggleExpanded(expandedCategories, setExpandedCategories, cat.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') toggleExpanded(expandedCategories, setExpandedCategories, cat.id)
+                      }}
                     >
+                      <input
+                        type="checkbox"
+                        title="Select all groups in this category"
+                        className="h-4 w-4 shrink-0 rounded border-slate-300 accent-primary"
+                        checked={allSystemIncluded}
+                        ref={(el) => {
+                          if (el) el.indeterminate = systemIncludedCount > 0 && !allSystemIncluded
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleAllGroupsInCategory(cat.id, cat.name, groups)}
+                      />
                       <div
                         className={cn(
                           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
@@ -253,7 +314,7 @@ export function ConfigureFoodLibraryDialog({ open, onClose, existingConfig }: Co
                       ) : (
                         <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
                       )}
-                    </button>
+                    </div>
 
                     {catExpanded && (
                       <div className="space-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Flame, Beef, Wheat, Droplet, GlassWater, Pill,
-  CalendarDays, Sparkles, ListChecks, Info,
+  CalendarDays, Sparkles, ListChecks, Info, Pencil, Check, Minus,
 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -86,6 +86,26 @@ interface CreateDietPlanDialogProps {
    */
   assessment?: NutritionAssessmentRecord | null
   member?: ManagedUser | null
+}
+
+function round1(value: number) {
+  return Math.round(value * 10) / 10
+}
+
+/** Rescales a meal item/alternative's macros proportionally to a new quantity — same math FoodPicker uses when first adding an item. */
+function scaleMealItem<T extends { quantity: number; calories: number; protein: number; carbs: number; fat: number }>(
+  item: T,
+  newQuantity: number
+): T {
+  const ratio = newQuantity / Number(item.quantity)
+  return {
+    ...item,
+    quantity: newQuantity,
+    calories: round1(Number(item.calories) * ratio),
+    protein: round1(Number(item.protein) * ratio),
+    carbs: round1(Number(item.carbs) * ratio),
+    fat: round1(Number(item.fat) * ratio),
+  }
 }
 
 function sum(items: { calories: string | number; protein: string | number; carbs: string | number; fat: string | number }[]) {
@@ -314,6 +334,29 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
     setDays((prev) => prev.map((d) => d.localId === dayLocalId
       ? { ...d, meals: d.meals.map((m) => m.localId === mealLocalId ? { ...m, alternatives: m.alternatives.filter((a) => a.localId !== altLocalId) } : m) }
       : d))
+  }
+  // Rescales macros proportionally to the new quantity (relative to whatever
+  // they currently are) rather than re-looking-up the food — works the same
+  // whether the item came from the library or was typed in as a custom item.
+  const updateMealItemQuantity = (dayLocalId: number, mealLocalId: number, itemLocalId: number, newQuantity: number) => {
+    if (!newQuantity || newQuantity <= 0) return
+    setDays((prev) => prev.map((d) => d.localId !== dayLocalId ? d : {
+      ...d,
+      meals: d.meals.map((m) => m.localId !== mealLocalId ? m : {
+        ...m,
+        items: m.items.map((i) => i.localId !== itemLocalId ? i : scaleMealItem(i, newQuantity)),
+      }),
+    }))
+  }
+  const updateMealAlternativeQuantity = (dayLocalId: number, mealLocalId: number, altLocalId: number, newQuantity: number) => {
+    if (!newQuantity || newQuantity <= 0) return
+    setDays((prev) => prev.map((d) => d.localId !== dayLocalId ? d : {
+      ...d,
+      meals: d.meals.map((m) => m.localId !== mealLocalId ? m : {
+        ...m,
+        alternatives: m.alternatives.map((a) => a.localId !== altLocalId ? a : scaleMealItem(a, newQuantity)),
+      }),
+    }))
   }
 
   // What the foods actually added so far add up to — a live readout, never
@@ -636,8 +679,10 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                   onUpdateMeal={(mealId, patch) => updateMeal(day.localId, mealId, patch)}
                   onAddItem={(mealId, item) => addMealItem(day.localId, mealId, item)}
                   onRemoveItem={(mealId, itemId) => removeMealItem(day.localId, mealId, itemId)}
+                  onUpdateItemQuantity={(mealId, itemId, qty) => updateMealItemQuantity(day.localId, mealId, itemId, qty)}
                   onAddAlternative={(mealId, alt) => addMealAlternative(day.localId, mealId, alt)}
                   onRemoveAlternative={(mealId, altId) => removeMealAlternative(day.localId, mealId, altId)}
+                  onUpdateAlternativeQuantity={(mealId, altId, qty) => updateMealAlternativeQuantity(day.localId, mealId, altId, qty)}
                 />
               ))}
               {(dayMode === 'custom' || days.length === 0) && (
@@ -805,7 +850,8 @@ function Stat({ icon: Icon, label }: { icon: any; label: string }) {
 }
 
 function DayCard({
-  day, dayTotal, target, onRemove, hideRemove, onAddMeal, onRemoveMeal, onUpdateMeal, onAddItem, onRemoveItem, onAddAlternative, onRemoveAlternative,
+  day, dayTotal, target, onRemove, hideRemove, onAddMeal, onRemoveMeal, onUpdateMeal,
+  onAddItem, onRemoveItem, onUpdateItemQuantity, onAddAlternative, onRemoveAlternative, onUpdateAlternativeQuantity,
 }: {
   day: BuilderDay
   dayTotal: { calories: number; protein: number; carbs: number; fat: number }
@@ -819,8 +865,10 @@ function DayCard({
   onUpdateMeal: (mealLocalId: number, patch: Partial<BuilderMeal>) => void
   onAddItem: (mealLocalId: number, item: MealItemInput) => void
   onRemoveItem: (mealLocalId: number, itemLocalId: number) => void
+  onUpdateItemQuantity: (mealLocalId: number, itemLocalId: number, quantity: number) => void
   onAddAlternative: (mealLocalId: number, alt: MealAlternativeInput) => void
   onRemoveAlternative: (mealLocalId: number, altLocalId: number) => void
+  onUpdateAlternativeQuantity: (mealLocalId: number, altLocalId: number, quantity: number) => void
 }) {
   const [expanded, setExpanded] = useState(true)
   return (
@@ -853,8 +901,10 @@ function DayCard({
               onUpdate={(patch) => onUpdateMeal(meal.localId, patch)}
               onAddItem={(item) => onAddItem(meal.localId, item)}
               onRemoveItem={(itemId) => onRemoveItem(meal.localId, itemId)}
+              onUpdateItemQuantity={(itemId, qty) => onUpdateItemQuantity(meal.localId, itemId, qty)}
               onAddAlternative={(alt) => onAddAlternative(meal.localId, alt)}
               onRemoveAlternative={(altId) => onRemoveAlternative(meal.localId, altId)}
+              onUpdateAlternativeQuantity={(altId, qty) => onUpdateAlternativeQuantity(meal.localId, altId, qty)}
             />
           ))}
           <Button variant="outline" size="sm" onClick={onAddMeal}>
@@ -953,16 +1003,90 @@ function TargetSummaryBar({
   )
 }
 
+/** Rounds a quantity to the nearest 50g/ml and never below 50 — steppers and typed values both land on whole 50s, never fractional grams. */
+function roundQuantity(value: number) {
+  return Math.max(50, Math.round(value / 50) * 50)
+}
+
+/** One added food/alternative row — a compact display by default, with a pencil toggle into a ±50 stepper (and free-typed, rounded-on-commit input) for correcting the quantity without deleting and re-adding the item. */
+function MealItemRow({
+  prefix, item, onUpdateQuantity, onRemove,
+}: {
+  prefix?: string
+  item: { localId: number; foodName: string; quantity: number; unit: string; calories: number }
+  onUpdateQuantity: (quantity: number) => void
+  onRemove: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(String(item.quantity))
+
+  const commit = (value: number) => {
+    const rounded = roundQuantity(value)
+    setDraft(String(rounded))
+    onUpdateQuantity(rounded)
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded-md bg-white px-2 py-1 text-xs">
+      <span className="text-slate-700">
+        {prefix}{item.foodName} <span className="text-slate-400">— {item.quantity}{item.unit}</span>
+      </span>
+      <div className="flex items-center gap-1.5">
+        {editing ? (
+          <>
+            <button type="button" className="rounded border border-slate-200 bg-white p-0.5 text-slate-500 hover:text-primary" onClick={() => commit(item.quantity - 50)}>
+              <Minus className="h-3 w-3" />
+            </button>
+            <Input
+              type="number"
+              step={50}
+              min={50}
+              className="h-6 w-16 px-1 text-xs"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => commit(Number(draft) || item.quantity)}
+              onKeyDown={(e) => { if (e.key === 'Enter') commit(Number(draft) || item.quantity) }}
+            />
+            <button type="button" className="rounded border border-slate-200 bg-white p-0.5 text-slate-500 hover:text-primary" onClick={() => commit(item.quantity + 50)}>
+              <Plus className="h-3 w-3" />
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="text-primary hover:text-primary/80">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-slate-500">{item.calories} kcal</span>
+            <button
+              type="button"
+              onClick={() => { setDraft(String(item.quantity)); setEditing(true) }}
+              className="text-slate-300 hover:text-primary"
+              title="Edit quantity"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          </>
+        )}
+        <button type="button" onClick={onRemove} className="text-slate-300 hover:text-red-500">
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function MealCard({
-  meal, onRemove, onUpdate, onAddItem, onRemoveItem, onAddAlternative, onRemoveAlternative,
+  meal, onRemove, onUpdate, onAddItem, onRemoveItem, onUpdateItemQuantity, onAddAlternative, onRemoveAlternative, onUpdateAlternativeQuantity,
 }: {
   meal: BuilderMeal
   onRemove: () => void
   onUpdate: (patch: Partial<BuilderMeal>) => void
   onAddItem: (item: MealItemInput) => void
   onRemoveItem: (itemLocalId: number) => void
+  onUpdateItemQuantity: (itemLocalId: number, quantity: number) => void
   onAddAlternative: (alt: MealAlternativeInput) => void
   onRemoveAlternative: (altLocalId: number) => void
+  onUpdateAlternativeQuantity: (altLocalId: number, quantity: number) => void
 }) {
   const totals = sum(meal.items)
   const [showAlternatives, setShowAlternatives] = useState(meal.alternatives.length > 0)
@@ -997,15 +1121,12 @@ function MealCard({
       {meal.items.length > 0 && (
         <div className="mt-3 space-y-1 rounded-lg bg-white p-1.5">
           {meal.items.map((item) => (
-            <div key={item.localId} className="flex items-center justify-between rounded-md px-2 py-1 text-xs">
-              <span className="text-slate-700">{item.foodName} <span className="text-slate-400">— {item.quantity}{item.unit}</span></span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-slate-500">{item.calories} kcal</span>
-                <button type="button" onClick={() => onRemoveItem(item.localId)} className="text-slate-300 hover:text-red-500">
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
+            <MealItemRow
+              key={item.localId}
+              item={item}
+              onUpdateQuantity={(qty) => onUpdateItemQuantity(item.localId, qty)}
+              onRemove={() => onRemoveItem(item.localId)}
+            />
           ))}
         </div>
       )}
@@ -1028,15 +1149,13 @@ function MealCard({
         <div className="mt-2 space-y-2 rounded-lg border border-dashed border-violet-200 bg-violet-50/40 p-2">
           <p className="text-[11px] text-violet-500">A member can swap the main foods above for one of these instead.</p>
           {meal.alternatives.map((alt) => (
-            <div key={alt.localId} className="flex items-center justify-between rounded-md bg-white px-2 py-1 text-xs">
-              <span className="text-slate-700">OR {alt.foodName} <span className="text-slate-400">— {alt.quantity}{alt.unit}</span></span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-slate-500">{alt.calories} kcal</span>
-                <button type="button" onClick={() => onRemoveAlternative(alt.localId)} className="text-slate-300 hover:text-red-500">
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
+            <MealItemRow
+              key={alt.localId}
+              prefix="OR "
+              item={alt}
+              onUpdateQuantity={(qty) => onUpdateAlternativeQuantity(alt.localId, qty)}
+              onRemove={() => onRemoveAlternative(alt.localId)}
+            />
           ))}
           <FoodPicker asAlternative onAdd={onAddAlternative} />
         </div>
