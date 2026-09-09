@@ -1,10 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
-import { UserDetailCard } from '@/components/entity/UserDetailCard'
-import { AssignTrainerDialog } from '@/components/entity/AssignTrainerDialog'
-import { MemberDietsDialog } from '@/components/entity/MemberDietsDialog'
-import { EditUserDialog } from '@/components/entity/EditUserDialog'
+import { MemberProfileTabs } from '@/components/entity/MemberProfileTabs'
 import { useUser, useDeleteUser, useUsersByRole } from '@/hooks/useUsers'
 import { useBranches } from '@/hooks/useBranches'
 import { useRoles } from '@/hooks/useRoles'
@@ -21,9 +18,6 @@ export default function AdminMemberDetailPage() {
   const { trainerRole } = useRoles()
   const { data: trainers = [] } = useUsersByRole(trainerRole?.id)
   const { data: diets = [] } = useDietAssignmentsForMember(id)
-  const [assignTrainerOpen, setAssignTrainerOpen] = useState(false)
-  const [dietsOpen, setDietsOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
 
   // A trainer can only be assigned within the member's own branch — narrow
   // the picker up front so the request can never fail on a mismatch.
@@ -66,45 +60,21 @@ export default function AdminMemberDetailPage() {
     <div className="flex flex-col h-full">
       <Header title={user.fullName ?? user.firstName} />
       <div className="flex-1 overflow-auto p-6">
-        <UserDetailCard
-          user={user}
+        <MemberProfileTabs
+          member={user}
           roleLabel="Member"
           branchLabel={branchName}
           onBack={() => navigate('/admin/members')}
-          onEdit={() => setEditOpen(true)}
           onDelete={() =>
             deleteUser.mutate(user.id, { onSuccess: () => navigate('/admin/members') })
           }
           isDeleting={deleteUser.isPending}
-          trainerName={currentTrainer?.fullName ?? currentTrainer?.firstName}
-          onAssignTrainer={() => setAssignTrainerOpen(true)}
-          dietCount={diets.length}
-          onViewDiets={() => setDietsOpen(true)}
+          trainerOptions={branchTrainers}
+          currentTrainerName={currentTrainer?.fullName ?? currentTrainer?.firstName}
+          dietAssignments={diets}
+          dietTrainerName={trainerName}
         />
       </div>
-
-      <EditUserDialog
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        user={user}
-        roleLabel="Member"
-      />
-
-      <AssignTrainerDialog
-        open={assignTrainerOpen}
-        onClose={() => setAssignTrainerOpen(false)}
-        member={user}
-        trainerOptions={branchTrainers}
-      />
-
-      <MemberDietsDialog
-        open={dietsOpen}
-        onClose={() => setDietsOpen(false)}
-        member={user}
-        assignments={diets}
-        trainerOptions={branchTrainers}
-        trainerName={trainerName}
-      />
     </div>
   )
 }
