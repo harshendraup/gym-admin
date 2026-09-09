@@ -1,8 +1,21 @@
 import { get, post, put, del } from './client'
+import type { DietType } from './nutrition-assessments.api'
 
 export type DietPlanGoal = 'Weight Loss' | 'Muscle Gain' | 'Fat Loss' | 'Fitness'
 export type DietPlanStatus = 'Draft' | 'Active' | 'Archived'
 export type DietPlanType = 'Template' | 'Custom'
+
+/**
+ * Free-form plan-level preferences (diet type, meal frequency, food/cooking
+ * preference) — stored in the `metaDietPlan` jsonb column, which already
+ * exists and is fully wired through the validator/service/transformer but
+ * had no defined shape yet. No migration needed to add this.
+ */
+export interface DietPlanMeta {
+  dietType?: DietType
+  mealsPerDay?: number
+  foodPreference?: string
+}
 
 export interface DietMealItem {
   id: number
@@ -97,6 +110,7 @@ export interface DietPlanRecord {
   fatTarget: string | null
   waterTarget: string | null
   isActive: boolean
+  metaDietPlan: DietPlanMeta | null
   createdAt: string
   updatedAt: string
   days: DietPlanDay[]
@@ -185,6 +199,7 @@ export interface CreateDietPlanPayload {
   fatTarget?: number
   waterTarget?: number
   isActive?: boolean
+  metaDietPlan?: DietPlanMeta
   days?: PlanDayInput[]
   supplements?: SupplementInput[]
   hydration?: HydrationInput

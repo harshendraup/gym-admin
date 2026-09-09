@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Flame, Beef, Wheat, Droplet } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useCreateNutritionAssessment, useUpdateNutritionAssessment } from '@/hooks/useNutritionAssessments'
+import { suggestTargetsFromProfile } from '@/lib/nutrition-calc'
 import type {
   NutritionGoal, ActivityLevel, DietType, NutritionAssessmentRecord,
 } from '@/api/nutrition-assessments.api'
@@ -52,7 +54,7 @@ interface NutritionAssessmentDialogProps {
   onClose: () => void
   member: ManagedUser
   assessment?: NutritionAssessmentRecord | null
-  onSaved?: (assessmentId: number) => void
+  onSaved?: (saved: NutritionAssessmentRecord) => void
 }
 
 /**
@@ -101,6 +103,17 @@ export function NutritionAssessmentDialog({ open, onClose, member, assessment, o
   const goal = watch('goal')
   const activityLevel = watch('activityLevel')
   const dietType = watch('dietType')
+  const currentWeight = watch('currentWeight')
+  const height = watch('height')
+
+  const suggestedTargets = suggestTargetsFromProfile({
+    weightKg: currentWeight ? Number(currentWeight) : undefined,
+    heightCm: height ? Number(height) : undefined,
+    age: member.age,
+    gender: member.gender,
+    activityLevel,
+    goal,
+  })
 
   const onSubmit = (values: FormValues, status: 'Draft' | 'Completed') => {
     const payload = {
@@ -131,9 +144,9 @@ export function NutritionAssessmentDialog({ open, onClose, member, assessment, o
     }
 
     if (isEdit) {
-      update.mutate(payload, { onSuccess: (result) => { onSaved?.(result.id); onClose() } })
+      update.mutate(payload, { onSuccess: (result) => { onSaved?.(result); onClose() } })
     } else {
-      create.mutate({ ...payload, memberId: Number(member.id) }, { onSuccess: (result) => { onSaved?.(result.id); onClose() } })
+      create.mutate({ ...payload, memberId: Number(member.id) }, { onSuccess: (result) => { onSaved?.(result); onClose() } })
     }
   }
 
@@ -162,6 +175,28 @@ export function NutritionAssessmentDialog({ open, onClose, member, assessment, o
               <Field label="Waist (cm)"><Input type="number" {...register('waist')} /></Field>
               <Field label="Body Fat %"><Input type="number" {...register('bodyFatPercentage')} /></Field>
             </div>
+          </Section>
+
+          <Section title="Suggested Daily Targets">
+            {suggestedTargets ? (
+              <>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Stat icon={Flame} label={`${suggestedTargets.calories} kcal`} />
+                  <Stat icon={Beef} label={`${suggestedTargets.protein}g protein`} />
+                  <Stat icon={Wheat} label={`${suggestedTargets.carbs}g carbs`} />
+                  <Stat icon={Droplet} label={`${suggestedTargets.fat}g fat`} />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Estimate from {member.fullName ?? member.firstName}'s age/gender, current weight, height and
+                  activity level (Mifflin-St Jeor) — the trainer sets the final targets on the plan itself.
+                </p>
+              </>
+            ) : (
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                Add current weight and height above, and make sure {member.fullName ?? member.firstName}'s age and
+                gender are set on their profile, to see suggested targets here.
+              </p>
+            )}
           </Section>
 
           <Section title="Lifestyle & Activity">
@@ -238,5 +273,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label className="text-xs">{label}</Label>
       {children}
     </div>
+  )
+}
+
+function Stat({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-lg bg-primary/5 px-2.5 py-1.5 text-sm text-slate-700">
+      <Icon className="h-3.5 w-3.5 text-primary" /> {label}
+    </span>
   )
 }

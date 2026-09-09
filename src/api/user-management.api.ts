@@ -13,6 +13,9 @@ export interface ManagedUser {
   fullName: string | null
   email: string | null
   mobile: string | null
+  age: number | null
+  gender: string | null
+  dateOfBirth: string | null
   businessId: number | null
   branchId: number | null
   roleId: number | null

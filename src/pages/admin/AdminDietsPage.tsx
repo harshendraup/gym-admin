@@ -114,16 +114,12 @@ export default function AdminDietsPage() {
             <TabsTrigger value="foods">
               <StepLabel step={1} label="Food Library" done={!!libraryConfig.data} />
             </TabsTrigger>
-            {libraryConfig.data && (
-              <>
-                <TabsTrigger value="plans">
-                  <StepLabel step={2} label="Diet Plans" done={(plans.data?.length ?? 0) > 0} />
-                </TabsTrigger>
-                <TabsTrigger value="assignments">
-                  <StepLabel step={3} label="Assigned Diets" done={(assignments.data?.length ?? 0) > 0} />
-                </TabsTrigger>
-              </>
-            )}
+            <TabsTrigger value="plans">
+              <StepLabel step={2} label="Diet Plans" done={(plans.data?.length ?? 0) > 0} />
+            </TabsTrigger>
+            <TabsTrigger value="assignments">
+              <StepLabel step={3} label="Assigned Diets" done={(assignments.data?.length ?? 0) > 0} />
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="foods">
@@ -186,61 +182,57 @@ export default function AdminDietsPage() {
             )}
           </TabsContent>
 
-          {libraryConfig.data && (
-            <>
-              <TabsContent value="plans">
-                <DietPlanLibrarySection
-                  data={plans.data}
-                  isLoading={plans.isLoading}
-                  isError={plans.isError}
-                  onRetry={plans.refetch}
-                  onCreate={() => { setEditingPlan(null); setPlanFormOpen(true) }}
-                  onOpenPlan={setDetailPlan}
-                  onDuplicatePlan={(p) => duplicatePlan.mutate(p.id)}
-                  onArchivePlan={(p) => updateAnyPlan.mutate({ id: p.id, data: { status: 'Archived', isActive: false } })}
-                  defaultOpen
-                />
-              </TabsContent>
+          <TabsContent value="plans">
+            <DietPlanLibrarySection
+              data={plans.data}
+              isLoading={plans.isLoading}
+              isError={plans.isError}
+              onRetry={plans.refetch}
+              onCreate={() => { setEditingPlan(null); setPlanFormOpen(true) }}
+              onOpenPlan={setDetailPlan}
+              onDuplicatePlan={(p) => duplicatePlan.mutate(p.id)}
+              onArchivePlan={(p) => updateAnyPlan.mutate({ id: p.id, data: { status: 'Archived', isActive: false } })}
+              defaultOpen
+            />
+          </TabsContent>
 
-              <TabsContent value="assignments">
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <h1 className="text-2xl font-bold text-slate-900">Assigned Diet Plans</h1>
-                      <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
-                        Which members are on a diet plan right now, and who's coaching them.
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => { setAssignFixedPlanId(undefined); setAssignOpen(true) }}
-                      disabled={(plans.data?.length ?? 0) === 0}
-                    >
-                      <Plus className="mr-1.5 h-4 w-4" /> Assign to Member
-                    </Button>
-                  </div>
-
-                  <DietPlanTable
-                    data={assignments.data}
-                    planLookup={planLookup}
-                    isLoading={assignments.isLoading || plans.isLoading}
-                    isError={assignments.isError}
-                    onRetry={assignments.refetch}
-                    emptyMessage={
-                      (plans.data?.length ?? 0) === 0
-                        ? 'Create a diet plan in the Diet Plans tab, then assign it to a member.'
-                        : 'No members are on a diet plan yet — assign your first one.'
-                    }
-                    memberLabel={memberName}
-                    trainerLabel={trainerName}
-                    onEdit={setEditingAssignment}
-                    onDelete={(a) => deleteAssignment.mutate(a.id)}
-                    deletingId={deleteAssignment.isPending ? (deleteAssignment.variables ?? null) : null}
-                  />
+          <TabsContent value="assignments">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">Assigned Diet Plans</h1>
+                  <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
+                    Which members are on a diet plan right now, and who's coaching them.
+                  </p>
                 </div>
-              </TabsContent>
-            </>
-          )}
+                <Button
+                  size="sm"
+                  onClick={() => { setAssignFixedPlanId(undefined); setAssignOpen(true) }}
+                  disabled={(plans.data?.length ?? 0) === 0}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> Assign to Member
+                </Button>
+              </div>
+
+              <DietPlanTable
+                data={assignments.data}
+                planLookup={planLookup}
+                isLoading={assignments.isLoading || plans.isLoading}
+                isError={assignments.isError}
+                onRetry={assignments.refetch}
+                emptyMessage={
+                  (plans.data?.length ?? 0) === 0
+                    ? 'Create a diet plan in the Diet Plans tab, then assign it to a member.'
+                    : 'No members are on a diet plan yet — assign your first one.'
+                }
+                memberLabel={memberName}
+                trainerLabel={trainerName}
+                onEdit={setEditingAssignment}
+                onDelete={(a) => deleteAssignment.mutate(a.id)}
+                deletingId={deleteAssignment.isPending ? (deleteAssignment.variables ?? null) : null}
+              />
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 

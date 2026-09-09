@@ -5,11 +5,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AssignDietPlanDialog } from './AssignDietPlanDialog'
 import { NutritionAssessmentDialog } from './NutritionAssessmentDialog'
+import { CreateDietPlanDialog } from './CreateDietPlanDialog'
 import { useDietPlans } from '@/hooks/useDietPlans'
 import { useNutritionAssessmentsForMember } from '@/hooks/useNutritionAssessments'
 import { useDietProgress } from '@/hooks/useDietTracking'
 import type { DietAssignmentRecord, DietAssignmentStatus } from '@/api/diet-assignments.api'
 import type { ManagedUser } from '@/api/user-management.api'
+import type { NutritionAssessmentRecord } from '@/api/nutrition-assessments.api'
 
 const statusVariant: Record<DietAssignmentStatus, 'secondary' | 'success' | 'default'> = {
   Draft: 'secondary',
@@ -38,6 +40,8 @@ export function MemberDietsDialog({
 }: MemberDietsDialogProps) {
   const [assignOpen, setAssignOpen] = useState(false)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
+  const [planFormOpen, setPlanFormOpen] = useState(false)
+  const [planFormAssessment, setPlanFormAssessment] = useState<NutritionAssessmentRecord | null>(null)
   const { data: plans = [] } = useDietPlans()
   const { data: assessments = [] } = useNutritionAssessmentsForMember(open ? Number(member.id) : undefined)
   const latestAssessment = assessments[0]
@@ -140,6 +144,21 @@ export function MemberDietsDialog({
         onClose={() => setAssessmentOpen(false)}
         member={member}
         assessment={latestAssessment}
+        onSaved={(saved) => {
+          // Only a completed assessment (not a draft) has enough to suggest
+          // real targets from — a draft save just closes as before.
+          if (saved.status !== 'Completed') return
+          setPlanFormAssessment(saved)
+          setPlanFormOpen(true)
+        }}
+      />
+
+      <CreateDietPlanDialog
+        open={planFormOpen}
+        onClose={() => { setPlanFormOpen(false); setPlanFormAssessment(null) }}
+        fixedBranchId={member.branchId ? Number(member.branchId) : undefined}
+        assessment={planFormAssessment}
+        member={member}
       />
     </>
   )

@@ -106,7 +106,7 @@ export default function SubAdminDietsPage() {
       />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {SECTIONS.filter((s) => s.key === 'foods' || !!libraryConfig.data).map((s, i) => (
+        {SECTIONS.map((s, i) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
@@ -148,7 +148,7 @@ export default function SubAdminDietsPage() {
         ))}
       </div>
 
-      {section === 'assignments' && libraryConfig.data && (
+      {section === 'assignments' && (
         <ScoreCard
           title={`Assigned Diets · ${assignments.data?.length ?? 0}`}
           subtitle="Which members are on a diet plan right now, and who's coaching them"
@@ -178,7 +178,7 @@ export default function SubAdminDietsPage() {
         </ScoreCard>
       )}
 
-      {section === 'plans' && libraryConfig.data && (
+      {section === 'plans' && (
         <DietPlanLibrarySection
           data={plans.data}
           isLoading={plans.isLoading}

@@ -17,18 +17,49 @@ import {
 import { FoodPicker } from './FoodPicker'
 import { useCreateDietPlan, useUpdateDietPlan } from '@/hooks/useDietPlans'
 import { cn } from '@/lib/utils'
+import { suggestTargetsFromProfile } from '@/lib/nutrition-calc'
 import type { BranchRecord } from '@/api/branches.api'
 import type {
   DietPlanGoal, DietPlanRecord, PlanDayInput, MealInput, MealItemInput,
-  MealAlternativeInput, SupplementInput,
+  MealAlternativeInput, SupplementInput, DietPlanMeta,
 } from '@/api/diet-plans.api'
+import type { NutritionAssessmentRecord, DietType } from '@/api/nutrition-assessments.api'
+import type { ManagedUser } from '@/api/user-management.api'
 
 const GOALS: DietPlanGoal[] = ['Weight Loss', 'Muscle Gain', 'Fat Loss', 'Fitness']
 const MEAL_TYPES = ['Breakfast', 'Mid-Morning', 'Lunch', 'Pre-Workout', 'Post-Workout', 'Evening Snack', 'Dinner', 'Bedtime']
+const DIET_TYPES: DietType[] = ['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Vegan']
+const FOOD_PREFERENCES = ['Home-cooked', 'Tiffin / Delivery Service', 'Eats Out Often', 'Meal Prep (Batch Cooked)', 'No Specific Preference']
+const HYDRATION_SOURCES = ['Plain Water', 'Water + Coconut Water', 'Water + Fresh Fruit Juice', 'Water + Buttermilk / Lassi', 'Water + Electrolyte (ORS)']
+const HYDRATION_PRESETS_ML = [2000, 2500, 3000, 4000]
+
+// Priority order for picking a default N-meal spread (most essential meals
+// first), independent of MEAL_TYPES' chronological display order — e.g. a
+// 4-meal day should end up Breakfast/Lunch/Evening Snack/Dinner, not stop at
+// Pre-Workout just because that's earlier in the day.
+const DEFAULT_MEAL_PRIORITY = ['Breakfast', 'Lunch', 'Dinner', 'Evening Snack', 'Mid-Morning', 'Post-Workout', 'Pre-Workout', 'Bedtime']
+
+/** Auto-suggested starting name — the trainer can freely retype it; we only ever set this, never force it back. */
+function suggestPlanName(goal: DietPlanGoal, member?: ManagedUser | null) {
+  const who = member ? (member.fullName ?? member.firstName) : undefined
+  return who ? `${goal} — ${who}` : `${goal} Plan`
+}
 
 let localId = -1
 function nextLocalId() {
   return localId--
+}
+
+/** N empty meals for a fresh day, in chronological order, picked from DEFAULT_MEAL_PRIORITY. */
+function buildDefaultMeals(count: number): BuilderMeal[] {
+  const chosen = new Set(DEFAULT_MEAL_PRIORITY.slice(0, count))
+  return MEAL_TYPES.filter((t) => chosen.has(t)).map((mealType) => ({
+    localId: nextLocalId(),
+    mealType,
+    mealTime: '',
+    items: [],
+    alternatives: [],
+  }))
 }
 
 interface BuilderMeal extends MealInput {
@@ -47,6 +78,14 @@ interface CreateDietPlanDialogProps {
   branchOptions?: BranchRecord[]
   fixedBranchId?: number
   plan?: DietPlanRecord | null
+  /**
+   * When creating a new plan (ignored while editing), prefills the Overview
+   * tab's goal + macro targets from this assessment's BMR/TDEE estimate and
+   * sends `assessmentId` with the create payload — see nutrition-calc.ts.
+   * `member` supplies the age/gender the assessment itself doesn't carry.
+   */
+  assessment?: NutritionAssessmentRecord | null
+  member?: ManagedUser | null
 }
 
 function sum(items: { calories: string | number; protein: string | number; carbs: string | number; fat: string | number }[]) {
@@ -67,15 +106,30 @@ function sum(items: { calories: string | number; protein: string | number; carbs
  * creates a new version server-side (see DietPlanService.update) rather
  * than mutating history, so this dialog never needs its own versioning UI.
  */
-export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranchId, plan }: CreateDietPlanDialogProps) {
+export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranchId, plan, assessment, member }: CreateDietPlanDialogProps) {
   const isEdit = !!plan
   const create = useCreateDietPlan()
   const update = useUpdateDietPlan(plan?.id ?? 0)
   const isPending = create.isPending || update.isPending
 
+  // Only meaningful for a brand-new plan — editing keeps whatever
+  // assessmentId (or none) the plan already has, never overwritten from an
+  // unrelated assessment passed into the dialog.
+  const suggestedFromAssessment = !isEdit && assessment
+    ? suggestTargetsFromProfile({
+        weightKg: assessment.currentWeight ? Number(assessment.currentWeight) : undefined,
+        heightCm: assessment.height ? Number(assessment.height) : undefined,
+        age: member?.age,
+        gender: member?.gender,
+        activityLevel: assessment.activityLevel,
+        goal: assessment.goal,
+      })
+    : null
+
   const [tab, setTab] = useState('overview')
   const [branchId, setBranchId] = useState('')
   const [name, setName] = useState('')
+  const [nameTouched, setNameTouched] = useState(false)
   const [goal, setGoal] = useState<DietPlanGoal>('Fitness')
   const [description, setDescription] = useState('')
   const [caloriesTarget, setCaloriesTarget] = useState('')
@@ -85,25 +139,51 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
   const [waterTarget, setWaterTarget] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [dietType, setDietType] = useState<DietType | ''>('')
+  const [mealsPerDay, setMealsPerDay] = useState('')
+  const [foodPreference, setFoodPreference] = useState('')
 
   const [days, setDays] = useState<BuilderDay[]>([])
+  // 'same' = build one day once and repeat it repeatDays times; 'custom' = build each day separately (today's behavior).
+  const [dayMode, setDayMode] = useState<'same' | 'custom'>('same')
+  const [repeatDays, setRepeatDays] = useState('7')
   const [supplements, setSupplements] = useState<(SupplementInput & { localId: number })[]>([])
   const [hydrationMl, setHydrationMl] = useState('')
+  const [hydrationSource, setHydrationSource] = useState('')
+  const [reviewVisited, setReviewVisited] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!open) return
     setTab('overview')
     setBranchId(plan ? String(plan.branchId) : fixedBranchId ? String(fixedBranchId) : '')
-    setName(plan?.name ?? '')
-    setGoal(plan?.goal ?? 'Fitness')
+    const initialGoal = plan?.goal ?? (!isEdit && assessment ? assessment.goal : 'Fitness')
+    setGoal(initialGoal)
+    setName(plan?.name || (!isEdit ? suggestPlanName(initialGoal, member) : ''))
+    setNameTouched(false)
     setDescription(plan?.description ?? '')
-    setCaloriesTarget(plan?.caloriesTarget ?? '')
-    setProteinTarget(plan?.proteinTarget ?? '')
-    setCarbsTarget(plan?.carbsTarget ?? '')
-    setFatTarget(plan?.fatTarget ?? '')
+    setCaloriesTarget(plan?.caloriesTarget ?? (suggestedFromAssessment ? String(suggestedFromAssessment.calories) : ''))
+    setProteinTarget(plan?.proteinTarget ?? (suggestedFromAssessment ? String(suggestedFromAssessment.protein) : ''))
+    setCarbsTarget(plan?.carbsTarget ?? (suggestedFromAssessment ? String(suggestedFromAssessment.carbs) : ''))
+    setFatTarget(plan?.fatTarget ?? (suggestedFromAssessment ? String(suggestedFromAssessment.fat) : ''))
     setWaterTarget(plan?.waterTarget ?? '')
     setStartDate(plan?.startDate?.slice(0, 10) ?? '')
     setEndDate(plan?.endDate?.slice(0, 10) ?? '')
+    setDietType(plan?.metaDietPlan?.dietType ?? (!isEdit && assessment ? assessment.dietType : '') ?? '')
+    setMealsPerDay(
+      plan?.metaDietPlan?.mealsPerDay
+        ? String(plan.metaDietPlan.mealsPerDay)
+        : !isEdit && assessment?.mealsPerDay
+          ? String(assessment.mealsPerDay)
+          : ''
+    )
+    setFoodPreference(plan?.metaDietPlan?.foodPreference ?? (!isEdit ? assessment?.foodPreference ?? '' : ''))
+    setError('')
+    // New plans default to "same every day" (the common case); editing a
+    // plan that already has more than one distinct day keeps "custom" so its
+    // real structure isn't hidden behind the single-day view.
+    setDayMode(isEdit && (plan?.days?.length ?? 0) > 1 ? 'custom' : 'same')
+    setRepeatDays('7')
     setDays(
       (plan?.days ?? []).map((d) => ({
         localId: nextLocalId(),
@@ -158,7 +238,9 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
       }))
     )
     setHydrationMl(plan?.hydration?.targetMl ?? '')
-  }, [open, plan, fixedBranchId])
+    setHydrationSource(plan?.hydration?.notes ?? '')
+    setReviewVisited(false)
+  }, [open, plan, fixedBranchId, isEdit, assessment, suggestedFromAssessment, member])
 
   const dayTotals = useMemo(
     () => days.map((d) => sum(d.meals.flatMap((m) => m.items))),
@@ -174,12 +256,32 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
   }, [dayTotals])
 
   const addDay = () => {
+    const requestedMeals = Math.min(8, Math.max(0, Math.round(Number(mealsPerDay) || 0)))
     setDays((prev) => [
       ...prev,
-      { localId: nextLocalId(), dayNumber: prev.length + 1, dayName: `Day ${prev.length + 1}`, isRestDay: false, meals: [] },
+      {
+        localId: nextLocalId(),
+        dayNumber: prev.length + 1,
+        dayName: `Day ${prev.length + 1}`,
+        isRestDay: false,
+        meals: requestedMeals > 0 ? buildDefaultMeals(requestedMeals) : [],
+      },
     ])
   }
   const removeDay = (localId: number) => setDays((prev) => prev.filter((d) => d.localId !== localId).map((d, i) => ({ ...d, dayNumber: i + 1 })))
+
+  // Switching to "same every day" only ever keeps one template day — extra
+  // days built while in "custom" mode are dropped (with confirmation, since
+  // that's real data loss) so there's never ambiguity about which day repeats.
+  const handleDayModeChange = (mode: 'same' | 'custom') => {
+    if (mode === 'same' && days.length > 1) {
+      if (!window.confirm(`Switch to one repeating day? This keeps only "${days[0].dayName || 'Day 1'}" and discards the other ${days.length - 1} day(s) you've built.`)) {
+        return
+      }
+      setDays((prev) => [{ ...prev[0], dayNumber: 1, dayName: 'Daily Plan' }])
+    }
+    setDayMode(mode)
+  }
   const addMeal = (dayLocalId: number) => {
     setDays((prev) => prev.map((d) => d.localId === dayLocalId
       ? { ...d, meals: [...d.meals, { localId: nextLocalId(), mealType: 'Breakfast', mealTime: '', items: [], alternatives: [] }] }
@@ -214,16 +316,60 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
       : d))
   }
 
+  // What the foods actually added so far add up to — a live readout, never
+  // written into the target fields. The target (caloriesTarget/etc. state)
+  // is a separate goal the trainer sets; this is just "where you are."
+  const addedTotals = planTotals
+    ? {
+        calories: Math.round(planTotals.calories),
+        protein: Math.round(planTotals.protein),
+        carbs: Math.round(planTotals.carbs),
+        fat: Math.round(planTotals.fat),
+      }
+    : null
+
+  const targets = {
+    calories: caloriesTarget ? Number(caloriesTarget) : null,
+    protein: proteinTarget ? Number(proteinTarget) : null,
+    carbs: carbsTarget ? Number(carbsTarget) : null,
+    fat: fatTarget ? Number(fatTarget) : null,
+  }
+
+  // null when there's nothing to compare yet (no target, or no target for
+  // that specific macro) — callers show "—" rather than a bogus number.
+  const remaining = {
+    calories: targets.calories !== null ? targets.calories - (addedTotals?.calories ?? 0) : null,
+    protein: targets.protein !== null ? targets.protein - (addedTotals?.protein ?? 0) : null,
+    carbs: targets.carbs !== null ? targets.carbs - (addedTotals?.carbs ?? 0) : null,
+    fat: targets.fat !== null ? targets.fat - (addedTotals?.fat ?? 0) : null,
+  }
+
+  const hasAnyFood = days.some((d) => d.meals.some((m) => m.items.length > 0))
+  const hasTarget = !!(caloriesTarget || proteinTarget || carbsTarget || fatTarget)
+
+  const handleGoalChange = (v: DietPlanGoal) => {
+    setGoal(v)
+    if (!isEdit && !nameTouched) setName(suggestPlanName(v, member))
+  }
+
   const addSupplement = () => setSupplements((prev) => [...prev, { localId: nextLocalId(), name: '', quantity: '' }])
   const updateSupplement = (localId: number, patch: Partial<SupplementInput>) =>
     setSupplements((prev) => prev.map((s) => (s.localId === localId ? { ...s, ...patch } : s)))
   const removeSupplement = (localId: number) => setSupplements((prev) => prev.filter((s) => s.localId !== localId))
 
-  const canSubmit = name.trim().length > 0 && (isEdit || !!branchId)
+  const buildMetaDietPlan = (): DietPlanMeta | undefined => {
+    if (!dietType && !mealsPerDay && !foodPreference) return undefined
+    return {
+      dietType: dietType || undefined,
+      mealsPerDay: mealsPerDay ? Number(mealsPerDay) : undefined,
+      foodPreference: foodPreference || undefined,
+    }
+  }
 
   const buildPayload = () => ({
     name,
     goal,
+    assessmentId: !isEdit && assessment ? assessment.id : undefined,
     description: description || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
@@ -232,31 +378,49 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
     carbsTarget: carbsTarget ? Number(carbsTarget) : undefined,
     fatTarget: fatTarget ? Number(fatTarget) : undefined,
     waterTarget: waterTarget ? Number(waterTarget) : undefined,
+    metaDietPlan: buildMetaDietPlan(),
     planType: (days.length > 0 ? 'Custom' : 'Template') as 'Custom' | 'Template',
-    days: days.length > 0
-      ? days.map((d) => ({
-          dayNumber: d.dayNumber,
-          dayName: d.dayName,
-          isRestDay: d.isRestDay,
-          notes: d.notes,
-          meals: d.meals.map((m) => ({
-            mealType: m.mealType,
-            mealName: m.mealName,
-            mealTime: m.mealTime,
-            notes: m.notes,
-            items: m.items.map(({ localId: _lid, ...i }) => i),
-            alternatives: m.alternatives.map(({ localId: _lid, ...a }) => a),
-          })),
-        }))
-      : undefined,
+    // "Same every day" repeats the one template day dayMode/repeatDays times
+    // rather than sending a single day — the backend has no concept of
+    // repetition, so the expansion happens here, at submit time.
+    days: (() => {
+      const expanded = dayMode === 'same' && days.length === 1
+        ? Array.from(
+            { length: Math.min(31, Math.max(1, Math.round(Number(repeatDays)) || 1)) },
+            (_, i) => ({ ...days[0], dayNumber: i + 1 })
+          )
+        : days
+      return expanded.length > 0
+        ? expanded.map((d) => ({
+            dayNumber: d.dayNumber,
+            dayName: d.dayName,
+            isRestDay: d.isRestDay,
+            notes: d.notes,
+            meals: d.meals.map((m) => ({
+              mealType: m.mealType,
+              mealName: m.mealName,
+              mealTime: m.mealTime,
+              notes: m.notes,
+              items: m.items.map(({ localId: _lid, ...i }) => i),
+              alternatives: m.alternatives.map(({ localId: _lid, ...a }) => a),
+            })),
+          }))
+        : undefined
+    })(),
     supplements: supplements.length > 0
       ? supplements.filter((s) => s.name).map(({ localId: _lid, ...s }) => s)
       : undefined,
-    hydration: hydrationMl ? { targetMl: Number(hydrationMl) } : undefined,
+    hydration: hydrationMl ? { targetMl: Number(hydrationMl), notes: hydrationSource || undefined } : undefined,
   })
 
   const onSubmit = () => {
-    if (!canSubmit) return
+    setError('')
+    if (!isEdit && !branchId) return setError('Select a branch')
+    if (!name.trim()) return setError('Plan name is required')
+    if (!hasTarget) return setError('Set at least a calorie target in Daily Macro Targets before creating the plan.')
+    if (!hasAnyFood) return setError('Add at least one food to a meal before creating the plan — see Days & Meals.')
+    if (!reviewVisited) return setError('Open the Review tab and check the plan before creating it.')
+
     const payload = buildPayload()
     if (isEdit) {
       update.mutate(payload, { onSuccess: onClose })
@@ -273,11 +437,15 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
             <DialogTitle>{isEdit ? `Edit "${plan?.name}"` : 'Create Diet Plan'}</DialogTitle>
           </DialogHeader>
           <p className="mt-1 text-sm text-muted-foreground">
-            Build targets only for a quick macro template, or add days and meals for a full nutrition schedule.
+            Set a daily target, then add days, meals and foods — you'll see Added/Remaining as you go, and review before creating.
           </p>
         </div>
 
-        <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col overflow-hidden">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => { setTab(v); if (v === 'review') setReviewVisited(true) }}
+          className="flex flex-1 flex-col overflow-hidden"
+        >
           <div className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-6 py-2.5">
             <TabsList className="h-auto w-full justify-start gap-1 bg-transparent p-0">
               <BuilderTab value="overview" icon={Info} label="Overview & Targets" />
@@ -287,8 +455,16 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
             </TabsList>
           </div>
 
+          {hasTarget && <TargetSummaryBar added={addedTotals} targets={targets} remaining={remaining} />}
+
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <TabsContent value="overview" className="mt-0 space-y-5">
+              {suggestedFromAssessment && (
+                <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs text-slate-600">
+                  Goal and targets below are suggested from {member?.fullName ?? member?.firstName ?? 'the member'}'s
+                  nutrition assessment — adjust anything as needed.
+                </p>
+              )}
               <FormSection title="Basics" description="What this plan is called and who it's for.">
                 {!fixedBranchId && !isEdit && (
                   <div className="space-y-1.5">
@@ -303,11 +479,18 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                 )}
                 <div className="space-y-1.5">
                   <Label>Plan Name</Label>
-                  <Input placeholder="Fat Loss — Priya" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input
+                    placeholder="Fat Loss — Priya"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setNameTouched(true) }}
+                  />
+                  {!isEdit && !nameTouched && (
+                    <p className="text-[11px] text-slate-400">Suggested from the goal below — edit freely.</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Goal</Label>
-                  <Select value={goal} onValueChange={(v) => setGoal(v as DietPlanGoal)}>
+                  <Select value={goal} onValueChange={(v) => handleGoalChange(v as DietPlanGoal)}>
                     <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
                     <SelectContent>{GOALS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                   </Select>
@@ -315,6 +498,30 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                 <div className="space-y-1.5">
                   <Label>Description</Label>
                   <Textarea placeholder="General instructions..." value={description} onChange={(e) => setDescription(e.target.value)} />
+                </div>
+              </FormSection>
+
+              <FormSection title="Diet Type & Preferences" description="How the member eats — used to guide which foods and meal timing make sense for this plan.">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>Diet Type</Label>
+                    <Select value={dietType || undefined} onValueChange={(v) => setDietType(v as DietType)}>
+                      <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                      <SelectContent>{DIET_TYPES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Meals / Day</Label>
+                    <Input type="number" min={1} max={8} placeholder="4" value={mealsPerDay} onChange={(e) => setMealsPerDay(e.target.value)} />
+                    <p className="text-[11px] text-slate-400">"Add Day" pre-creates this many meal slots for you.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Food Preference</Label>
+                    <Select value={foodPreference || undefined} onValueChange={setFoodPreference}>
+                      <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                      <SelectContent>{FOOD_PREFERENCES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </FormSection>
 
@@ -331,30 +538,89 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                 </div>
               </FormSection>
 
-              <FormSection title="Daily Macro Targets" description="The headline numbers shown on every card for this plan.">
+              <FormSection
+                title="Daily Macro Targets"
+                description="Set a daily goal — see Added/Remaining below as you build meals in Days & Meals."
+              >
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div className="space-y-1.5"><Label className="flex items-center gap-1 text-xs text-slate-500"><Flame className="h-3.5 w-3.5" /> Calories</Label><Input type="number" placeholder="1800" value={caloriesTarget} onChange={(e) => setCaloriesTarget(e.target.value)} /></div>
-                  <div className="space-y-1.5"><Label className="flex items-center gap-1 text-xs text-slate-500"><Beef className="h-3.5 w-3.5" /> Protein (g)</Label><Input type="number" placeholder="150" value={proteinTarget} onChange={(e) => setProteinTarget(e.target.value)} /></div>
-                  <div className="space-y-1.5"><Label className="flex items-center gap-1 text-xs text-slate-500"><Wheat className="h-3.5 w-3.5" /> Carbs (g)</Label><Input type="number" placeholder="120" value={carbsTarget} onChange={(e) => setCarbsTarget(e.target.value)} /></div>
-                  <div className="space-y-1.5"><Label className="flex items-center gap-1 text-xs text-slate-500"><Droplet className="h-3.5 w-3.5" /> Fat (g)</Label><Input type="number" placeholder="50" value={fatTarget} onChange={(e) => setFatTarget(e.target.value)} /></div>
-                  <div className="space-y-1.5"><Label className="flex items-center gap-1 text-xs text-slate-500"><GlassWater className="h-3.5 w-3.5" /> Water (L)</Label><Input type="number" placeholder="3" value={waterTarget} onChange={(e) => setWaterTarget(e.target.value)} /></div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1 text-xs text-slate-500"><Flame className="h-3.5 w-3.5" /> Calories</Label>
+                    <Input type="number" placeholder="1800" value={caloriesTarget} onChange={(e) => setCaloriesTarget(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1 text-xs text-slate-500"><Beef className="h-3.5 w-3.5" /> Protein (g)</Label>
+                    <Input type="number" placeholder="150" value={proteinTarget} onChange={(e) => setProteinTarget(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1 text-xs text-slate-500"><Wheat className="h-3.5 w-3.5" /> Carbs (g)</Label>
+                    <Input type="number" placeholder="120" value={carbsTarget} onChange={(e) => setCarbsTarget(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1 text-xs text-slate-500"><Droplet className="h-3.5 w-3.5" /> Fat (g)</Label>
+                    <Input type="number" placeholder="50" value={fatTarget} onChange={(e) => setFatTarget(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1 text-xs text-slate-500"><GlassWater className="h-3.5 w-3.5" /> Water (L)</Label>
+                    <Input type="number" placeholder="3" value={waterTarget} onChange={(e) => setWaterTarget(e.target.value)} />
+                  </div>
                 </div>
-                {days.length > 0 && planTotals && (
-                  <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs text-slate-600">
-                    From the meals you've built so far, the actual daily average is <span className="font-semibold text-slate-800">{Math.round(planTotals.calories)} kcal, {Math.round(planTotals.protein)}g protein</span> — compare that with the targets above.
-                  </p>
-                )}
               </FormSection>
             </TabsContent>
 
             <TabsContent value="days" className="space-y-3 mt-0">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="dayMode"
+                      className="h-3.5 w-3.5 accent-primary"
+                      checked={dayMode === 'same'}
+                      onChange={() => handleDayModeChange('same')}
+                    />
+                    Same plan every day
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="dayMode"
+                      className="h-3.5 w-3.5 accent-primary"
+                      checked={dayMode === 'custom'}
+                      onChange={() => handleDayModeChange('custom')}
+                    />
+                    Different plan per day
+                  </label>
+                  {dayMode === 'same' && (
+                    <label className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+                      Repeat for
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        className="h-7 w-16 text-xs"
+                        value={repeatDays}
+                        onChange={(e) => setRepeatDays(e.target.value)}
+                      />
+                      days
+                    </label>
+                  )}
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  {dayMode === 'same'
+                    ? 'Build one day\'s meals below — it\'ll be used for every day of the plan.'
+                    : 'Add each day separately and build different meals for each — e.g. a weekly plan that varies day to day.'}
+                </p>
+              </div>
+
               <p className="text-xs text-slate-500">
-                Add a day, then meals inside it, then search or type in the foods that make up each meal. Leave this empty to keep a simple macro-only plan.
+                {dayMode === 'same'
+                  ? 'Add meals to this day, then search or type in the foods that make it up — every plan needs at least one food added here.'
+                  : 'Add a day, then meals inside it, then search or type in the foods that make up each meal — every plan needs at least one food added here.'}
               </p>
               {days.length === 0 && (
                 <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center">
                   <CalendarDays className="h-6 w-6 text-slate-300" />
-                  <p className="text-sm text-slate-400">No days yet — this plan stays "macro-only" until you add one.</p>
+                  <p className="text-sm text-slate-400">No days yet — add one to start building this plan's meals.</p>
                 </div>
               )}
               {days.map((day, dayIndex) => (
@@ -362,7 +628,9 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                   key={day.localId}
                   day={day}
                   dayTotal={dayTotals[dayIndex]}
+                  target={hasTarget ? { calories: targets.calories ?? 0, protein: targets.protein ?? 0, carbs: targets.carbs ?? 0, fat: targets.fat ?? 0 } : null}
                   onRemove={() => removeDay(day.localId)}
+                  hideRemove={dayMode === 'same'}
                   onAddMeal={() => addMeal(day.localId)}
                   onRemoveMeal={(mealId) => removeMeal(day.localId, mealId)}
                   onUpdateMeal={(mealId, patch) => updateMeal(day.localId, mealId, patch)}
@@ -372,14 +640,42 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                   onRemoveAlternative={(mealId, altId) => removeMealAlternative(day.localId, mealId, altId)}
                 />
               ))}
-              <Button variant="outline" size="sm" onClick={addDay}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Day
-              </Button>
+              {(dayMode === 'custom' || days.length === 0) && (
+                <Button variant="outline" size="sm" onClick={addDay}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> {dayMode === 'same' ? 'Add This Day' : 'Add Day'}
+                </Button>
+              )}
             </TabsContent>
 
             <TabsContent value="extras" className="mt-0 space-y-5">
               <FormSection title="Hydration" description="Optional — a precise ml figure, shown to the member instead of the plain liters target from Overview.">
-                <Input className="max-w-xs" type="number" placeholder="3000" value={hydrationMl} onChange={(e) => setHydrationMl(e.target.value)} />
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-500">Target (ml)</Label>
+                    <Input className="max-w-xs" type="number" placeholder="3000" value={hydrationMl} onChange={(e) => setHydrationMl(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-500">Source</Label>
+                    <Select value={hydrationSource || undefined} onValueChange={setHydrationSource}>
+                      <SelectTrigger className="w-56"><SelectValue placeholder="Optional" /></SelectTrigger>
+                      <SelectContent>{HYDRATION_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {HYDRATION_PRESETS_ML.map((ml) => (
+                    <Button
+                      key={ml}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setHydrationMl(String(ml))}
+                    >
+                      {ml / 1000}L
+                    </Button>
+                  ))}
+                </div>
               </FormSection>
 
               <FormSection title="Supplements" description="What the member should take, and when.">
@@ -423,10 +719,12 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                 </div>
               </div>
 
-              {days.length > 0 ? (
+              {days.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    {days.length} day{days.length === 1 ? '' : 's'} · {days.reduce((a, d) => a + d.meals.length, 0)} meals total
+                    {dayMode === 'same'
+                      ? `1 day, repeated for ${Math.min(31, Math.max(1, Math.round(Number(repeatDays)) || 1))} days · ${days[0].meals.length} meals/day`
+                      : `${days.length} day${days.length === 1 ? '' : 's'} · ${days.reduce((a, d) => a + d.meals.length, 0)} meals total`}
                   </p>
                   {days.map((day) => (
                     <div key={day.localId} className="rounded-lg border border-slate-100 px-3 py-2">
@@ -437,9 +735,20 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                  This will save as a macro-only plan — no day/meal schedule attached.
+              )}
+              {!hasTarget && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  No daily target set yet — go to Overview & Targets and set at least a calorie goal.
+                </p>
+              )}
+              {!hasAnyFood && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  This plan has no foods yet — go to Days & Meals and add at least one before creating it.
+                </p>
+              )}
+              {hasTarget && hasAnyFood && (
+                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  Looks good — you can create the plan now.
                 </p>
               )}
 
@@ -452,11 +761,14 @@ export function CreateDietPlanDialog({ open, onClose, branchOptions, fixedBranch
           </div>
         </Tabs>
 
-        <DialogFooter className="shrink-0 border-t border-slate-100 px-6 py-4">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="button" onClick={onSubmit} disabled={isPending || !canSubmit}>
-            {isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Diet Plan'}
-          </Button>
+        <DialogFooter className="shrink-0 flex-col items-end gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          {error ? <p className="text-xs text-red-600">{error}</p> : <span />}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" onClick={onSubmit} disabled={isPending || !hasTarget || !hasAnyFood || !reviewVisited}>
+              {isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Diet Plan'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -493,11 +805,15 @@ function Stat({ icon: Icon, label }: { icon: any; label: string }) {
 }
 
 function DayCard({
-  day, dayTotal, onRemove, onAddMeal, onRemoveMeal, onUpdateMeal, onAddItem, onRemoveItem, onAddAlternative, onRemoveAlternative,
+  day, dayTotal, target, onRemove, hideRemove, onAddMeal, onRemoveMeal, onUpdateMeal, onAddItem, onRemoveItem, onAddAlternative, onRemoveAlternative,
 }: {
   day: BuilderDay
   dayTotal: { calories: number; protein: number; carbs: number; fat: number }
+  /** The plan-wide target (its own daily average once foods exist) — used to show this day's own % progress toward it. */
+  target: { calories: number; protein: number; carbs: number; fat: number } | null
   onRemove: () => void
+  /** Hides the remove-day button — used in "same every day" mode where there's always exactly one template day. */
+  hideRemove?: boolean
   onAddMeal: () => void
   onRemoveMeal: (mealLocalId: number) => void
   onUpdateMeal: (mealLocalId: number, patch: Partial<BuilderMeal>) => void
@@ -517,12 +833,15 @@ function DayCard({
             {Math.round(dayTotal.calories)} kcal · {Math.round(dayTotal.protein)}g protein
           </span>
         </button>
-        <Button size="sm" variant="ghost" className="h-7 px-2 hover:bg-white hover:text-red-500" onClick={onRemove}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        {!hideRemove && (
+          <Button size="sm" variant="ghost" className="h-7 px-2 hover:bg-white hover:text-red-500" onClick={onRemove}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
       {expanded && (
         <div className="space-y-3 bg-white p-3">
+          {target && <DayProgress dayTotal={dayTotal} target={target} />}
           {day.meals.length === 0 && (
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">No meals in this day yet.</p>
           )}
@@ -543,6 +862,93 @@ function DayCard({
           </Button>
         </div>
       )}
+    </div>
+  )
+}
+
+const PROGRESS_MACROS = [
+  { key: 'calories', label: 'Cal', suffix: '' },
+  { key: 'protein', label: 'Protein', suffix: 'g' },
+  { key: 'carbs', label: 'Carbs', suffix: 'g' },
+  { key: 'fat', label: 'Fat', suffix: 'g' },
+] as const
+
+/** One macro's progress bar — a value against an optional target, with an optional remaining/over readout. Shared by DayProgress (day vs. plan target) and TargetSummaryBar (added-so-far vs. target, dialog-wide). */
+function MacroBar({
+  label, suffix, actualValue, targetValue, remainingValue,
+}: {
+  label: string
+  suffix: string
+  actualValue: number
+  targetValue: number | null
+  remainingValue?: number | null
+}) {
+  const pct = targetValue !== null && targetValue > 0 ? Math.round((actualValue / targetValue) * 100) : null
+  const offTarget = pct !== null && (pct < 85 || pct > 115)
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-slate-400">
+        <span>{label}</span>
+        <span className={offTarget ? 'text-amber-600' : 'text-slate-500'}>{pct === null ? '—' : `${pct}%`}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div
+          className={cn('h-full rounded-full', offTarget ? 'bg-amber-500' : 'bg-primary')}
+          style={{ width: `${pct === null ? 0 : Math.min(100, pct)}%` }}
+        />
+      </div>
+      <p className="text-[10px] text-slate-400">
+        {Math.round(actualValue)}{suffix}{targetValue !== null && ` / ${Math.round(targetValue)}${suffix}`}
+        {remainingValue !== undefined && remainingValue !== null && (
+          remainingValue > 0
+            ? ` · ${Math.round(remainingValue)}${suffix} left`
+            : remainingValue < 0
+              ? ` · ${Math.round(-remainingValue)}${suffix} over`
+              : ' · done'
+        )}
+      </p>
+    </div>
+  )
+}
+
+/** This day's own totals vs. the plan's target — meaningful once a plan has more than one day, since days can vary from the plan's overall average. */
+function DayProgress({
+  dayTotal, target,
+}: {
+  dayTotal: { calories: number; protein: number; carbs: number; fat: number }
+  target: { calories: number; protein: number; carbs: number; fat: number }
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2 sm:grid-cols-4">
+      {PROGRESS_MACROS.map(({ key, label, suffix }) => (
+        <MacroBar key={key} label={label} suffix={suffix} actualValue={dayTotal[key]} targetValue={target[key]} />
+      ))}
+    </div>
+  )
+}
+
+/** Persistent Added-so-far / Target / Remaining strip, visible on every tab of the builder — lives outside TabsContent so it doesn't disappear when switching tabs. */
+function TargetSummaryBar({
+  added, targets, remaining,
+}: {
+  added: { calories: number; protein: number; carbs: number; fat: number } | null
+  targets: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null }
+  remaining: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null }
+}) {
+  return (
+    <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-2.5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {PROGRESS_MACROS.map(({ key, label, suffix }) => (
+          <MacroBar
+            key={key}
+            label={label}
+            suffix={suffix}
+            actualValue={added ? added[key] : 0}
+            targetValue={targets[key]}
+            remainingValue={remaining[key]}
+          />
+        ))}
+      </div>
     </div>
   )
 }
